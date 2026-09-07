@@ -74,14 +74,14 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 <h2 style="border:0;margin-top:28px">Abstract</h2>
 <div class="abstract">
 <p>Recovering the 3D flight of a shuttlecock from a single broadcast camera is attractive and, for badminton, unsolved: no public 3D ground truth exists, and every published method validates on real footage with 2D reprojection error alone. We show that this practice cannot distinguish a correct reconstruction from a wrong one. On synthetic strokes with known 3D, solutions whose 2D reprojection differs by only <b>0.07–0.20&nbsp;px</b> differ in true 3D error by up to <b>46×</b> for smashes.</p>
-<p>We derive a per-stroke <b>observability number N</b> — the departure of the image track from anything an unaccelerated 3D motion could produce, in units of tracker noise — that needs no 3D truth and predicts the Cramér–Rao bound on 3D error (<b>CRLB ∝ N<sup>−0.98</sup></b>, R²&nbsp;=&nbsp;0.83, partial ρ&nbsp;=&nbsp;−0.59 after controlling for track length). A learned 2D→3D lifter trained on 78,702 synthetic strokes anchored to real annotations and rendered through <b>ten cameras calibrated from real broadcasts</b> reaches 0.24&nbsp;m median error on held-out synthetic data — yet <b>beats the unbiased bound by up to 5.5× exactly where N is lowest</b>, i.e. where the answer comes from the prior rather than the image. On real TrackNetV3-tracked rallies its error rises to <b>0.87&nbsp;m</b> and physical validity falls from 98.9% to <b>79.9%</b>; per stroke type, that validity is predicted by N (Spearman&nbsp;+0.83) but not by the synthetic test error (−0.31).</p>
+<p>We derive a per-stroke <b>observability number N</b> — the departure of the image track from anything an unaccelerated 3D motion could produce, in units of tracker noise — that needs no 3D truth and predicts the Cramér–Rao bound on 3D error (<b>CRLB ∝ N<sup>−0.98</sup></b>, R²&nbsp;=&nbsp;0.83, partial ρ&nbsp;=&nbsp;−0.59 after controlling for track length). A learned 2D→3D lifter trained on 78,702 synthetic strokes anchored to real annotations and rendered through <b>ten cameras calibrated from real broadcasts</b> reaches 0.24&nbsp;m median error on held-out synthetic data — yet <b>beats the unbiased bound by up to 5.5× exactly where N is lowest</b>, i.e. where the answer comes from the prior rather than the image. On real TrackNetV3-tracked rallies its error rises to <b>0.76&nbsp;m</b> and physical validity falls from 98.9% to <b>85.0%</b>; per stroke type, that validity tracks N (Spearman&nbsp;+0.60) and not the synthetic test error (−0.31). A faithful re-implementation of MonoTrack's per-shot physics fitting on the same tracks and cameras reaches 1.02&nbsp;m median on synthetic strokes and 55.6% validity on real footage; it behaves like the unbiased estimator the bound describes, while the lifter's advantage comes from the prior.</p>
 </div>
 
 <div class="kv">
   <div><b>46×</b><span>3D-error spread hidden inside 0.2&nbsp;px of 2D reprojection (smash)</span></div>
   <div><b>N<sup>−0.98</sup></b><span>Cramér–Rao bound vs. the image-only observability number</span></div>
   <div><b>10</b><span>broadcast cameras calibrated from the court and net alone</span></div>
-  <div><b>0.24 → 0.87 m</b><span>lifter error, synthetic test → real footage</span></div>
+  <div><b>0.24 → 0.76 m</b><span>lifter error, synthetic test → real footage</span></div>
 </div>
 
 <h2 id="motivation">1. The evaluation problem</h2>
@@ -141,29 +141,49 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 <p>Real rallies were tracked with TrackNetV3 (best checkpoint, 0.940 validation accuracy; detection 9–92% per venue) and lifted with the same model through the same calibrated cameras. There is no 3D truth, so the reconstruction is scored against what the annotation and physics do know: every stroke must clear the net, and both ends of every stroke carry an annotated court position — a real horizontal anchor the model never sees.</p>
 <div class="kv">
   <div><b>177</b><span>real strokes reconstructed, 8 matches</span></div>
-  <div><b>98.9% → 79.9%</b><span>physically valid (clears the net), synthetic → real</span></div>
-  <div><b>0.24 → 0.87 m</b><span>median position error, synthetic → real (endpoint)</span></div>
-  <div><b>23.6 px</b><span>real endpoint error, normalised by local depth resolution; calibration is 1.7&nbsp;px</span></div>
+  <div><b>98.9% → 85.0%</b><span>physically valid (clears the net), synthetic → real</span></div>
+  <div><b>0.24 → 0.76 m</b><span>median position error, synthetic → real (endpoint; p90 3.71&nbsp;m)</span></div>
+  <div><b>3–7%</b><span>share of the endpoint error attributable to calibration; the rest is depth</span></div>
 </div>
 <figure>
   <img src="assets/fig_sim2real.png" alt="Per stroke type: real physical validity against synthetic test error and against N">
-  <figcaption><b>Fig. 6 — What predicts real-world validity.</b> Per stroke type, the fraction of real reconstructions that clear the net against (left) the synthetic-test error everyone reports, Spearman −0.31, and (right) the observability number N, Spearman +0.83. The smash looks as good as a clear on the synthetic test (0.26 vs 0.21&nbsp;m) and is the least valid stroke on real footage (55.6% vs 93.5%). Raw endpoint errors per type are confounded by where the stroke ends — the court resolves at 8.8&nbsp;px/m near the far baseline and 110&nbsp;px/m near the camera — so net clearance is the per-type metric here.</figcaption>
+  <figcaption><b>Fig. 6 — What predicts real-world validity.</b> Per stroke type, the fraction of real reconstructions that clear the net against (left) the synthetic-test error everyone reports, Spearman −0.31, and (right) the observability number N, Spearman +0.60. The smash looks as good as a clear on the synthetic test (0.26 vs 0.21&nbsp;m) yet sits well below the lifts on real footage (82.4% vs 93.1%); the block is the least valid (69.6%). With six stroke types of 12–33 strokes each, these correlations are directional rather than decisive. Raw endpoint errors per type are confounded by where the stroke ends — the court resolves at 8.8&nbsp;px/m near the far baseline and 110&nbsp;px/m near the camera — so net clearance is the per-type metric here.</figcaption>
 </figure>
 <div class="tw"><table>
 <tr><th>stroke type</th><th>N</th><th>CRLB (m)</th><th>synthetic test (m)</th><th>real: clears net</th></tr>
-<tr><td>殺球 smash</td><td>3.7</td><td>1.232</td><td>0.255</td><td class="bad">55.6%</td></tr>
-<tr><td>擋小球 block</td><td>8.6</td><td>0.583</td><td>0.324</td><td>68.2%</td></tr>
-<tr><td>放小球 net shot</td><td>9.8</td><td>0.619</td><td>0.282</td><td>85.7%</td></tr>
-<tr><td>切球 drop</td><td>8.9</td><td>0.458</td><td>0.293</td><td>92.9%</td></tr>
+<tr><td>殺球 smash</td><td>3.7</td><td>1.232</td><td>0.255</td><td>82.4%</td></tr>
+<tr><td>擋小球 block</td><td>8.6</td><td>0.583</td><td>0.324</td><td class="bad">69.6%</td></tr>
+<tr><td>放小球 net shot</td><td>9.8</td><td>0.619</td><td>0.282</td><td>84.8%</td></tr>
+<tr><td>切球 drop</td><td>8.9</td><td>0.458</td><td>0.293</td><td class="good">100.0%</td></tr>
 <tr><td>長球 clear</td><td>23.0</td><td>0.160</td><td>0.214</td><td>91.7%</td></tr>
-<tr><td>挑球 lift</td><td>27.0</td><td>0.183</td><td>0.225</td><td class="good">93.5%</td></tr>
+<tr><td>挑球 lift</td><td>27.0</td><td>0.183</td><td>0.225</td><td class="good">93.1%</td></tr>
 </table></div>
-<p class="note">Calibration is not the limiting term. At the endpoint the depth ambiguity vanishes (the shuttle is on a known plane), so calibration becomes the leading camera-side error — and it still inflates the endpoint error by only 3–7%. In pixel-equivalent terms the reconstruction error (23.6&nbsp;px median) is fourteen times the calibration residual (1.7&nbsp;px).</p>
+<p class="note">Calibration is not the limiting term. At the endpoint the depth ambiguity vanishes (the shuttle is on a known plane), so calibration becomes the leading camera-side error — and it still inflates the endpoint error by only 3–7%. The endpoint error is set by depth, not by the camera: 0.76&nbsp;m is an order of magnitude more than 1.7&nbsp;px of calibration error can produce anywhere on the court.</p>
 
 <h2 id="monotrack">7. Comparison with MonoTrack-style physics fitting</h2>
 <p>MonoTrack reconstructs each shot by fitting launch position, velocity and a per-shot drag coefficient under forward-Euler quadratic drag, minimising an L<sub>6</sub> reprojection loss with SLSQP. We re-implemented that step from its public code and ran it on the same 2D tracks and the same calibrated cameras as the lifter — the comparison the paper needs is the 3D-from-2D step on identical input. Deviations from the original (no hit detector, so each annotated stroke is one shot; the receiving-player drift term is dropped) are documented in the baseline's source.</p>
-<!-- MONOTRACK_RESULTS -->
-<p class="note" id="mt-pending">Results pending — the comparison is running.</p>
+<h3>Held-out synthetic strokes (true 3D known, n = 400)</h3>
+<div class="tw"><table>
+<tr><th>stroke type</th><th>n</th><th>lifter (m)</th><th>MonoTrack-style fit (m)</th><th>ratio</th></tr>
+<tr><td>長球 clear</td><td>22</td><td>0.140</td><td>0.277</td><td>2.0×</td></tr>
+<tr><td>挑球 lift</td><td>97</td><td>0.202</td><td>0.759</td><td>3.8×</td></tr>
+<tr><td>殺球 smash</td><td>43</td><td>0.246</td><td class="bad">2.309</td><td>9.4×</td></tr>
+<tr><td>切球 drop</td><td>23</td><td>0.251</td><td>0.847</td><td>3.4×</td></tr>
+<tr><td>放小球 net shot</td><td>82</td><td>0.284</td><td>1.086</td><td>3.8×</td></tr>
+<tr><td>擋小球 block</td><td>55</td><td>0.340</td><td>0.968</td><td>2.8×</td></tr>
+<tr><td><b>all</b> (median / mean)</td><td>400</td><td><b>0.254</b> / 0.365</td><td><b>1.018</b> / 1.365</td><td>4.0×</td></tr>
+</table></div>
+<p>The physics fit is worst exactly where N is lowest — on smashes its 2.31&nbsp;m sits <em>above</em> the 1.23&nbsp;m Cramér–Rao bound, as an unbiased estimator must — while the lifter's 0.25&nbsp;m sits below the bound. The two methods bracket the bound from opposite sides: the comparison is not evidence that the lifter extracts more from the image, but that it brings a prior the physics fit does not have.</p>
+<h3>Real tracked strokes (n = 177, no 3D truth)</h3>
+<div class="tw"><table>
+<tr><th>metric</th><th>lifter</th><th>MonoTrack-style fit</th></tr>
+<tr><td>clears the net</td><td class="good">85.0%</td><td class="bad">55.6%</td></tr>
+<tr><td>median net clearance</td><td>+0.28 m</td><td>+0.10 m</td></tr>
+<tr><td>endpoint error vs annotation, median / p90</td><td>0.76 / 3.71 m</td><td>3.30 / 13.27 m</td></tr>
+<tr><td>start error vs annotation, median</td><td>1.00 m</td><td>3.07 m</td></tr>
+<tr><td>net clearance by type — smash / drop / net shot / block / clear / lift</td><td>82 / 100 / 85 / 70 / 92 / 93 %</td><td>40 / 25 / 45 / 50 / 83 / 100 %</td></tr>
+</table></div>
+<p class="note">Both methods consumed identical TrackNetV3 tracks and identical calibrated cameras. The baseline reproduces MonoTrack's reconstruction step (per-shot launch state and drag coefficient, forward-Euler quadratic drag, L<sub>6</sub> reprojection loss, SLSQP) but not its hit detector or receiving-player term, so each annotated stroke is fitted as one shot; MonoTrack's full pipeline may do better on its own segmentation. Its real-footage numbers are consistent with what its authors reported being unable to measure.</p>
 
 <h2 id="viewer-section">8. Interactive 3D model</h2>
 <p>The calibrated court, net, broadcast camera frustum and forty reconstructed trajectories, exported from Blender. Drag to orbit, scroll to zoom.</p>
@@ -177,7 +197,7 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 </div>
 
 <h2 id="limits">9. Limitations</h2>
-<p>Real-footage validation rests on proxies: net clearance and annotated court positions at stroke ends. Rally-final floor landings — the one true 3D anchor — were unusable because the tracker loses the shuttle as it lands (0 of 10 candidates with ≥5 detections); tracking more of the 1,936 available rallies is the direct fix. Tracker coverage limited the real set to 177 of 9,875 candidate strokes. The self-calibration residual sits at 1.65&nbsp;px, decomposed as 1.06&nbsp;px of court-detection inconsistency plus 0.61&nbsp;px from reconciling the net; lens distortion, line placement and camera drift were each tested and ruled out (lines straight to 0.12&nbsp;px, drift 0.04&nbsp;px, line offsets 1.2&nbsp;mm median). The net tape sits a measured 15&nbsp;mm below the nominal cord height, consistently across venues.</p>
+<p>Real-footage validation rests on proxies: net clearance and annotated court positions at stroke ends. Rally-final floor landings — the one true 3D anchor — were unusable because the tracker loses the shuttle as it lands (0 of 10 candidates with ≥5 detections); tracking more of the 1,936 available rallies is the direct fix. Tracker coverage limited the real set to 177 of 9,875 candidate strokes. An earlier evaluation pass packed tracked frames contiguously instead of placing them at their true frame indices as in training; it reported 79.9% validity and 0.87&nbsp;m, the corrected pass reported here gives 85.0% and 0.76&nbsp;m — both are in the project logs, and the difference is the packing, not the model. The self-calibration residual sits at 1.65&nbsp;px, decomposed as 1.06&nbsp;px of court-detection inconsistency plus 0.61&nbsp;px from reconciling the net; lens distortion, line placement and camera drift were each tested and ruled out (lines straight to 0.12&nbsp;px, drift 0.04&nbsp;px, line offsets 1.2&nbsp;mm median). The net tape sits a measured 15&nbsp;mm below the nominal cord height, consistently across venues.</p>
 
 <h2 id="cite">BibTeX</h2>
 <pre>@misc{chang2026shuttle3d,
