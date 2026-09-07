@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Observability Limits of Monocular Shuttlecock 3D Reconstruction</title>
-<meta name="description" content="Monocular 3D shuttlecock trajectory reconstruction from broadcast badminton video: measured cameras, an image-computable observability number, and why synthetic test error does not predict real-world validity.">
+<title>SimTrack3D</title>
+<meta name="description" content="SimTrack3D: monocular 3D trajectory prediction for fast-moving shuttlecocks. Cameras measured from real broadcasts, 78,702 aerodynamically solved strokes anchored to real annotations, the Shuttle3D ray-depth lifter, and an observability number that says when the learned prior is doing the work.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -34,6 +34,9 @@ h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:52px 0 12px;pa
 h3{font-size:17px;font-weight:600;margin:26px 0 8px;color:var(--ink)}
 p{margin:0 0 14px}
 .abstract{font-size:16.5px;background:var(--soft);padding:20px 24px;border-radius:6px;border-left:3px solid var(--acc)}
+.contrib{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px}
+.contrib li{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:4px;padding:14px 18px;font-size:16px}
+.contrib b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:3px}
 .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:18px 0}
 .kv div{background:var(--surface);padding:12px 14px}
 .kv b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;color:var(--acc)}
@@ -60,11 +63,11 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 <div class="page">
 
 <header>
-  <h1>Observability Limits of Monocular Shuttlecock 3D Reconstruction from Broadcast Badminton Video</h1>
+  <h1>SimTrack3D: Monocular 3D Trajectory Prediction of Fast-Moving Shuttlecocks via Broadcast-Calibrated Sim-to-Real Transfer</h1>
   <p class="authors">Gino Chang</p>
   <p class="affil">Project page &middot; 2026</p>
   <div class="links">
-    <a href="#demo">Demo</a><a href="#related">Related work</a><a href="#method">Method</a><a href="#calibration">Calibration</a><a href="#observability">Observability</a><a href="#real">Real footage</a><a href="#monotrack">vs. MonoTrack</a><a href="#physics">Physics</a><a href="#viewer-section">3D viewer</a>
+    <a href="#demo">Demo</a><a href="#related">Related work</a><a href="#pipeline">Pipeline</a><a href="#calibration">Cameras</a><a href="#lifter">Lifter</a><a href="#real">Real footage</a><a href="#monotrack">vs. MonoTrack</a><a href="#observability">Observability</a><a href="#viewer-section">3D viewer</a><a href="#future">Future work</a>
   </div>
 </header>
 
@@ -76,29 +79,39 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
   <video controls autoplay muted playsinline loop preload="auto" poster="assets/demo_poster.jpg" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
     <source src="assets/demo_side_by_side.mp4" type="video/mp4">
   </video>
-  <figcaption><b>Left:</b> a real rally (Thailand Masters 2025, R32) with the TrackNetV3 2D track. <b>Right:</b> the court model calibrated from that broadcast's own court lines and net, orbiting, with the reconstructed 3D trajectory drawn stroke by stroke in sync — nine strokes, colour per stroke. Reconstruction is the lifter on real tracked frames, refined per stroke by the physics module of §9 — one launch state under quadratic drag, fitted to the 2D track with the lifter as a soft depth prior and the net as a constraint; frames the tracker missed are sampled from the fitted flight, frames outside any stroke show nothing.</figcaption>
+  <figcaption><b>Left:</b> a real rally (Thailand Masters 2025, R32) with the TrackNetV3 2D track. <b>Right:</b> the court model calibrated from that broadcast's own court lines and net, orbiting, with the reconstructed 3D trajectory drawn stroke by stroke in sync — nine strokes, colour per stroke. Reconstruction is the lifter on real tracked frames, refined per stroke by the physics module of §6; frames the tracker missed are sampled from the fitted flight, frames outside any stroke show nothing.</figcaption>
 </figure>
 
 <h2 style="border:0;margin-top:28px">Abstract</h2>
 <div class="abstract">
-<p>Recovering the 3D flight of a shuttlecock from a single broadcast camera is attractive and, for badminton, unsolved: no public 3D ground truth exists, and every published method validates on real footage with 2D reprojection error alone. We show that this practice cannot distinguish a correct reconstruction from a wrong one. On synthetic strokes with known 3D, solutions whose 2D reprojection differs by only <b>0.07–0.20&nbsp;px</b> differ in true 3D error by up to <b>46×</b> for smashes.</p>
-<p>We derive a per-stroke <b>observability number N</b> — the departure of the image track from anything an unaccelerated 3D motion could produce, in units of tracker noise — that needs no 3D truth and predicts the Cramér–Rao bound on 3D error (<b>CRLB ∝ N<sup>−0.98</sup></b>, R²&nbsp;=&nbsp;0.83, partial ρ&nbsp;=&nbsp;−0.59 after controlling for track length). A learned 2D→3D lifter trained on 78,702 synthetic strokes anchored to real annotations and rendered through <b>ten cameras calibrated from real broadcasts</b> reaches 0.24&nbsp;m median error on held-out synthetic data — yet <b>beats the unbiased bound by up to 5.5× exactly where N is lowest</b>, i.e. where the answer comes from the prior rather than the image. On real TrackNetV3-tracked rallies its error rises to <b>0.76&nbsp;m</b> and physical validity falls from 98.9% to <b>85.0%</b>; per stroke type, that validity tracks N (Spearman&nbsp;+0.60) and not the synthetic test error (−0.31). A faithful re-implementation of MonoTrack's per-shot physics fitting on the same tracks and cameras reaches 1.02&nbsp;m median on synthetic strokes and 55.6% validity on real footage; it behaves like the unbiased estimator the bound describes, while the lifter's advantage comes from the prior.</p>
+<p>2D shuttlecock tracking is defined by two extremes — the target is <b>small</b> (6.9&nbsp;px across in a 1280-wide broadcast, textureless) and <b>fast</b> (record smashes exceed 400&nbsp;km/h). Lifting those detections to 3D inherits both and adds a third. Small kills the apparent-size cue monocular depth normally uses; fast leaves a smash only about 15 frames of nearly straight image track; and unlike a tennis or table-tennis ball the shuttle <b>never bounces</b>, so there is no contact with a known plane to anchor either the reconstruction or a ground-truth dataset. No public 3D ground truth exists for broadcast badminton, and 3D errors of up to 46× hide inside 0.2&nbsp;px of reprojection residual.</p>
+<p>With no appearance cue and no landing anchor, the only things that determine where the shuttle is are aerodynamics and how players actually hit. <b>SimTrack3D</b> puts both into a sim-to-real pipeline built around real broadcast geometry rather than assumed geometry. Cameras are <b>measured</b>: the court plane leaves the focal length undetermined, so we take it from the net cord and calibrate <b>ten real broadcasts</b> end to end, gating each on the cord's catenary sag — a physical invariant the fit never sees. Trajectories are <b>anchored</b>: every synthetic stroke inherits the start point, end point and flight time of a real annotated stroke, and only the unobserved height profile is solved, as an aerodynamic boundary-value problem under quadratic drag. This yields <b>78,702 physically valid 3D strokes</b> in the geometry of real matches, from which we train <b>Shuttle3D</b>, a 2.7M-parameter ray-depth transformer that lifts a monocular 2D track to a 3D trajectory, followed by a physics refinement that returns the nearest single-launch-state flight.</p>
+<p>Shuttle3D reaches <b>0.24&nbsp;m</b> median 3D error on held-out synthetic strokes and <b>85.0%</b> physical validity on real TrackNetV3-tracked rallies, against <b>55.6%</b> for a faithful re-implementation of MonoTrack's per-shot physics fit on identical tracks and cameras; refinement raises validity to <b>99.3%</b>. Finally we derive an image-computable <b>observability number N</b> that predicts the Cramér–Rao bound (CRLB&nbsp;∝&nbsp;N<sup>−0.98</sup>, R²&nbsp;=&nbsp;0.83) and, with it, say precisely when the sim-to-real prior rather than the image is producing the answer: the model beats the unbiased bound by up to 5.5× exactly where N is lowest, and it is N — not the synthetic test error the field reports — that predicts which strokes survive on real footage.</p>
 </div>
+
+<ul class="contrib">
+  <li><b>A broadcast-calibrated sim-to-real pipeline for badminton.</b> Ten real broadcast cameras recovered from court lines and the net cord alone, each gated on cord sag; 78,702 3D strokes generated by solving quadratic-drag boundary-value problems anchored to 13,117 real annotated strokes, and rendered through those measured cameras. Simulation inherits real match geometry and real tactical distributions instead of sampling both.</li>
+  <li><b>Shuttle3D, a monocular ray-depth lifter with physics refinement.</b> A 2.7M-parameter transformer predicts depth along per-frame viewing rays, so calibration stays in the geometry rather than being relearned; a six-parameter launch-state fit then returns the nearest physically possible flight. 0.24&nbsp;m median synthetic error, 85.0% real-footage validity (99.3% after refinement) against MonoTrack-style fitting at 55.6%.</li>
+  <li><b>An observability theory that certifies the transfer.</b> 3D errors of up to 46× hide inside 0.2&nbsp;px of reprojection residual, so the field's real-footage metric cannot rank methods. The observability number N is computable from the image alone, predicts the Cramér–Rao bound, and identifies where a learned prior — not the image — is supplying the depth, which is exactly where sim-to-real transfer is fragile.</li>
+</ul>
 
 <div class="kv">
-  <div><b>46×</b><span>3D-error spread hidden inside 0.2&nbsp;px of 2D reprojection (smash)</span></div>
+  <div><b>10</b><span>broadcast cameras measured from the court and net alone</span></div>
+  <div><b>78,702</b><span>anchored, physically valid synthetic 3D strokes</span></div>
+  <div><b>85.0% → 99.3%</b><span>real-footage physical validity, lifter → after refinement</span></div>
   <div><b>N<sup>−0.98</sup></b><span>Cramér–Rao bound vs. the image-only observability number</span></div>
-  <div><b>10</b><span>broadcast cameras calibrated from the court and net alone</span></div>
-  <div><b>0.24 → 0.76 m</b><span>lifter error, synthetic test → real footage</span></div>
 </div>
 
-<h2 id="motivation">1. The evaluation problem</h2>
-<p>A point object seen from one camera lies on a ray; nothing in a single frame fixes where along it. What makes a shuttle trajectory recoverable at all is that gravity and air drag bend the flight over time, and the bend leaves a signature in the image. When the observed arc is short or nearly aligned with the viewing direction, that signature is small — and reprojection error stops saying anything about depth.</p>
+<h2 id="motivation">1. Small, fast, and never touching the ground</h2>
+<p>TrackNet and its successors defined 2D shuttle tracking by two extremes: the target is <b>exceptionally small</b> and <b>exceptionally fast</b>. Both properties carry into 3D, where each removes a different source of depth information, and a third property of badminton removes what is left.</p>
+<p><b>Small removes the appearance cue.</b> Monocular 3D systems for cars, people or furniture read depth from apparent size and from how a shape deforms across the frame. In our measurements the shuttle spans <b>6.9&nbsp;px</b> in a 1280-wide broadcast, stretching to 17&nbsp;px only as a motion streak; it carries no texture and no resolvable shape. Geometrically it is a point mass, so no single frame contains depth information at all — depth exists only in how the point moves.</p>
+<p><b>Fast removes the motion cue.</b> What makes the motion informative is that gravity and drag bend the flight, and the bend shows up in the image. A smash gives about 15 frames at 30&nbsp;fps, travelling nearly along the viewing direction, so the projected track is close to a straight line and the bend is buried in tracker noise. Sec. 9 makes this quantitative; Fig. 1 shows the consequence.</p>
 <figure>
   <img src="assets/fig_identifiability.png" alt="Profile-likelihood: 2D RMSE and true 3D error versus assumed launch height, clear vs smash">
   <figcaption><b>Fig. 1 — Reprojection error is blind to 3D error on fast, short shots.</b> Fixing the launch height <i>z</i><sub>0</sub> and re-fitting the other five launch parameters to a noisy 2D track (σ&nbsp;=&nbsp;2&nbsp;px, true 3D known). For a clear (63 frames) the 2D residual has a usable minimum at the truth. For a smash, solutions with 3D error from 0.06 to 2.78&nbsp;m sit within 0.20&nbsp;px of each other in 2D — below any tracker's noise floor. The same holds under a mismatched drag model, so it is not an artefact of fitting with the generating model.</figcaption>
 </figure>
-<p>This matters because the field's current state of the art (MonoTrack, CVPR-W 2022; SynthNet, MMSports 2024; Uplifting Table Tennis, WACV 2026) validates real-footage 3D with exactly this metric, and states explicitly that no 3D ground truth exists for broadcast video.</p>
+<p><b>Never bouncing removes the anchor.</b> A tennis or table-tennis ball touches a known plane in the middle of its flight, which fixes one 3D point exactly; systems such as TT3D are built on that contact, and so are the datasets that supervise them. A shuttle is airborne from racket to racket, and its only floor contact ends the rally — a moment where trackers routinely lose it. There is therefore neither a mid-flight constraint nor a practical route to real 3D labels.</p>
+<p>This cannot be trained away with ordinary supervision, because the data does not exist: the field's own systems (MonoTrack, CVPR-W 2022; SynthNet, MMSports 2024; Uplifting Table Tennis, WACV 2026) state that no 3D ground truth is available for broadcast video, and validate real footage with the reprojection error Fig. 1 shows to be blind. Simulation is the only available source of 3D truth — which makes the fidelity of the simulator, and the ability to tell when its prior is being leaned on rather than the image, the whole problem. That is what SimTrack3D is built to address.</p>
 
 <h2 id="related">2. Related work</h2>
 
@@ -136,29 +149,32 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 <a href="https://arxiv.org/abs/2509.18387">BlurBall, CVPRW 2026</a>
 </p>
 
-<p>This work occupies the intersection these lines leave empty. It is a sim-to-real pipeline for the fast, non-bouncing shuttle: cameras are measured from the broadcasts themselves rather than sampled from assumed ranges, synthetic strokes are anchored to real annotated ones, and the two together yield 3D data close enough to real play to train a single-camera 3D trajectory predictor. And it asks, with the 3D truth that only the synthetic side can supply, whether the metric the field relies on can certify a 3D reconstruction at all.</p>
+<p>This work occupies the intersection these lines leave empty. It is a sim-to-real pipeline for the fast, non-bouncing shuttle: cameras are measured from the broadcasts themselves rather than sampled from assumed ranges, synthetic strokes are anchored to real annotated ones, and the two together yield 3D data close enough to real play to train a single-camera 3D trajectory predictor — while the 3D truth only the synthetic side can supply is what lets us test whether the metric the field relies on can certify a reconstruction at all.</p>
 
-<h2 id="method">3. Method</h2>
-<h3>3.1 Calibrating the broadcast camera from the court and the net</h3>
-<p>A ground-plane homography cannot recover the intrinsics — on this data the two Zhang constraints disagree by 65%. It pins down everything on the floor and nothing above it, and the missing degree of freedom is exactly the vertical one a trajectory is made of. The net supplies it: a structure of known height (1.55&nbsp;m at the posts, sagging to 1.524&nbsp;m) at a known court position, spanning the image as a near-straight line that can be located to sub-pixel precision.</p>
-<p>We locate the painted court lines (sub-pixel ridge, 167–312 samples per image) and the net cord (270 samples, 0.14&nbsp;px fit residual), then fit a rigid pinhole camera to court&nbsp;+&nbsp;net in a right-handed frame. The court plane alone would fit any camera exactly (a plane-to-image map is an 8-DoF homography); the off-plane net is what makes the calibration determined.</p>
+<h2 id="pipeline">3. The sim-to-real pipeline</h2>
+<p>Prior synthetic pipelines sample a camera from an assumed range and a trajectory from a physics engine, then hope the gap to broadcast footage is small. We close both halves against the broadcast itself: the camera is measured from the video, and the trajectory inherits a real stroke's endpoints and duration, leaving only the unobserved height profile to physics.</p>
+
+<h3>3.1 Measuring the camera from the court and the net</h3>
+<p>A ground-plane homography cannot recover the intrinsics — on this data the two Zhang constraints disagree by 65%. It pins down everything on the floor and nothing above it, and the missing degree of freedom is exactly the vertical one a trajectory is made of. The net supplies it: a structure of known height (1.55&nbsp;m at the posts, sagging to 1.524&nbsp;m at centre) at a known court position, spanning the image as a near-straight line that can be located to sub-pixel precision.</p>
+<p>We locate the painted court lines (sub-pixel ridge, 167–312 samples per image) and the net cord (270 samples, 0.14&nbsp;px fit residual), then fit a rigid pinhole camera to court&nbsp;+&nbsp;net in a right-handed frame. The court plane alone would fit any camera exactly — a plane-to-image map is an 8-DoF homography — so the off-plane net is what makes the calibration determined. The cord's <em>sag</em> is deliberately withheld from the fit and used afterwards as an independent physical check.</p>
 <figure>
   <img src="assets/fig_pipeline.png" alt="How one broadcast frame is fitted to the Blender court: real frame, detections, render, blend, and the fitted camera in plan and side view">
   <figcaption><b>Fig. 2 — Fitting one broadcast frame to the court model.</b> (a) the frame with players removed by a temporal median; (b) sub-pixel court-line and net-cord samples found in the image; (c) the Blender court rendered from the rigid camera fitted to those samples; (d) a 50/50 blend of (a) and (c); (e, f) where that camera sits: 10.6&nbsp;m up, 30&nbsp;m from the court centre, 19° elevation, 2933&nbsp;px focal length — recovered from the court and net alone, with no other metadata.</figcaption>
 </figure>
 <figure>
   <img src="assets/render_test.png" alt="Blender render of the calibrated court from the fitted broadcast camera">
-  <figcaption><b>Fig. 2b — The calibrated camera reproduced in Blender.</b> Rendering the court model from the fitted camera and re-detecting lines in the render agrees with the real frame to <b>0.78&nbsp;px</b> on the court lines and <b>2.3&nbsp;px</b> on the net cord. An independent physical check — the net cord's sag, which the detector never sees — comes out at 23.5&nbsp;mm against the 26&nbsp;mm specification across ten venues.</figcaption>
+  <figcaption><b>Fig. 2b — The calibrated camera reproduced in Blender.</b> Rendering the court model from the fitted camera and re-detecting lines in the render agrees with the real frame to <b>0.78&nbsp;px</b> on the court lines and <b>2.3&nbsp;px</b> on the net cord. The independent physical check — the cord's sag, which the detector never sees — comes out at 23.5&nbsp;mm against the 26&nbsp;mm specification across ten venues.</figcaption>
 </figure>
 
-<h3>3.2 Synthetic strokes anchored to real annotations</h3>
-<p>Every training stroke is tied to one real annotated stroke: its start and end court positions and its flight time come from the ShuttleSet-format labels (13,129 strokes, 17 matches); only the height profile — the one quantity never observed — is synthesised, by solving a boundary-value problem under quadratic drag (terminal velocity 6.8&nbsp;m/s). 99.8% of 24,000 solves converge, and 98.9% of the resulting trajectories clear the net although the solver never sees it. Strokes are then projected through the ten <em>measured</em> cameras with 2&nbsp;px tracker noise and 5% dropout: <b>78,702 samples</b>, split by anchor so no real stroke appears on both sides.</p>
+<h3>3.2 Strokes anchored to real annotations</h3>
+<p>Every training stroke is tied to one real annotated stroke: its start and end court positions and its flight time come from the ShuttleSet-format labels (<b>13,117 anchored strokes</b>, 17 matches). Only the height profile — the one quantity never observed — is synthesised, by solving a boundary-value problem under quadratic drag (terminal velocity 6.8&nbsp;m/s, RK4) for the launch velocity that carries the shuttle from one annotated point to the other in the annotated time. 99.8% of 24,000 solves converge, and <b>98.9% of the resulting trajectories clear the net although the solver never sees it</b> — an independent check that anchoring to real strokes produces real flights. Because the anchors are real strokes, the shot-type mix, the speeds and the court coverage are the tournament's, not a designer's.</p>
+<p>Strokes are then projected through the ten <em>measured</em> cameras with 2&nbsp;px tracker noise and 5% dropout, giving <b>78,702 samples</b>, split by anchor so that no real stroke appears on both sides of the split. The same camera model drives Blender for image-space work (Fig. 2b), so trajectories, renders and the calibration all live in one geometry.</p>
 
-<h3>3.3 Lifter</h3>
-<p>A 2.7M-parameter transformer receives, per frame, the world-space viewing ray through the detection, the ray's floor intersection, a near-horizontal flag and time, plus the camera centre; it predicts relative depth along each ray and the 3D point is recovered geometrically. Calibration therefore lives in the geometry rather than being relearned. Depth, not height, is the output: 1.9% of frames look <em>up</em> at the shuttle from these 5–13&nbsp;m cameras, and a height parameterisation diverges there.</p>
+<h3>3.3 Shuttle3D: the monocular ray-depth lifter</h3>
+<p>A 2.7M-parameter transformer receives, per frame, the world-space viewing ray through the detection, the ray's floor intersection, a near-horizontal flag and time, plus the camera centre; it predicts relative depth along each ray, and the 3D point is recovered geometrically. Calibration therefore lives in the geometry rather than being relearned, which is what lets one model serve cameras from 12 to 39&nbsp;m away. Depth, not height, is the output: 1.9% of frames look <em>up</em> at the shuttle from these 5–13&nbsp;m cameras, and a height parameterisation diverges there.</p>
 
-<h2 id="calibration">4. Measured broadcast geometry</h2>
-<p>Synthetic pipelines usually <em>sample</em> camera parameters from assumed ranges. Calibrating real broadcasts instead gives a measured distribution — and it does not overlap the ranges assumed for the closest published pipeline.</p>
+<h2 id="calibration">4. What real broadcast cameras actually look like</h2>
+<p>Because the cameras are measured rather than sampled, the pipeline produces a distribution that can be compared with the ranges other synthetic pipelines assume. They do not overlap.</p>
 <figure>
   <img src="assets/fig_cameras.png" alt="Measured broadcast camera distance and elevation versus the ranges sampled by prior work">
   <figcaption><b>Fig. 3 — Real badminton broadcast cameras vs. assumed ranges.</b> Ten calibrated cameras: focal 1623–3756&nbsp;px (24.9° median horizontal FOV), height 4.9–13.3&nbsp;m, distance 12–39&nbsp;m, elevation 9.9–20.5°. The camera ranges sampled by Uplifting Table Tennis (WACV 2026) — 7–17&nbsp;m, 30–70° — were chosen for table tennis and contain none of these; the point is not that they are wrong, but that camera geometry has to be measured per sport rather than transferred.</figcaption>
@@ -173,19 +189,32 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 </table></div>
 <p class="note">Three quality gates select the ten: net-cord residual &lt;1&nbsp;px, sag within 10&nbsp;mm of specification, and far-baseline depth resolution ≥12&nbsp;px/m. The sag gate catches failures the fit residual misses — three venues fitted the cord to 0.2–0.4&nbsp;px yet implied sags of 9, −15 and −49&nbsp;mm. A fit residual proves you fitted <em>something</em>; only an independent physical invariant proves you fitted the right thing.</p>
 
-<h2 id="observability">5. An image-computable observability number</h2>
-<p>A constant-velocity 3D motion projects to a straight image line whose arc-length runs as a Möbius function of time. Fitting that model to the observed track and taking the residual — in units of the 2D noise — isolates exactly the signature gravity and drag leave in the image. We call it <b>N</b>. It uses no 3D information, so it can be computed on real footage before reconstructing anything.</p>
-<figure>
-  <img src="assets/fig_observability.png" alt="Observability number N versus the Cramér-Rao lower bound, log-log">
-  <figcaption><b>Fig. 4 — N predicts the Cramér–Rao bound.</b> 7,994 anchored strokes through the ten measured cameras. The bound (Fisher information of the six launch parameters, propagated to 3D position) follows CRLB&nbsp;∝&nbsp;N<sup>−0.98</sup> (R²&nbsp;=&nbsp;0.83; Spearman −0.92). N is not a proxy for track length: controlling for frame count, the partial correlation is −0.59, and at a fixed frame count the low-N and high-N quartiles still differ by 1.5–2.3× in CRLB. The stroke-type ordering emerges on its own and spans 16×.</figcaption>
-</figure>
+<h2 id="lifter">5. Shuttle3D on held-out synthetic strokes</h2>
+<p>Trained on the anchored dataset and tested on strokes whose anchors were never seen, Shuttle3D reaches <b>0.364&nbsp;m mean / 0.244&nbsp;m median</b> 3D error, with a 0.074&nbsp;m height error. The baselines available without depth are far away: assuming a constant depth gives 2.04&nbsp;m, assuming the shuttle is on the floor gives 9.66&nbsp;m.</p>
+<div class="kv">
+  <div><b>0.244 m</b><span>median 3D error, held-out synthetic strokes</span></div>
+  <div><b>0.074 m</b><span>height error</span></div>
+  <div><b>2.04 m</b><span>constant-depth baseline</span></div>
+  <div><b>9.66 m</b><span>shuttle-on-the-floor baseline</span></div>
+</div>
+<p>Splitting by anchor matters more than it sounds: one real stroke is replayed through several cameras and heights, so a random split would put near-duplicates on both sides and inflate the result. Section 9 returns to this number with the Cramér–Rao bound and shows which part of it is the image and which part is the prior.</p>
 
-<h2 id="bound">6. A learned lifter beats the bound — where the image says least</h2>
-<p>The lifter reaches 0.364&nbsp;m mean / 0.244&nbsp;m median 3D error on held-out synthetic strokes (baselines: constant depth 2.04&nbsp;m; assume-on-the-floor 9.66&nbsp;m). Compared per stroke type against the Cramér–Rao bound computed on the same strokes, it sits honestly above the bound where N is high, and <em>below</em> it where N is low.</p>
+<h2 id="physics">6. Physics refinement: one launch state per stroke</h2>
+<p>The lifter predicts one depth per frame with no temporal coupling, so its 3D track jitters and does not look like a flight (grey dots below). Refinement replaces it with the nearest physically possible trajectory: a single launch position and velocity, integrated under the quadratic-drag model of §3.2, fitted per stroke to (a) the observed 2D track — reprojection residual, σ&nbsp;=&nbsp;2&nbsp;px — and (b) the lifter's 3D estimate as a soft prior (σ&nbsp;=&nbsp;0.5&nbsp;m, Huber), plus two one-sided constraints that hold for every stroke a rally continues from: the path clears the net cord where it crosses the net plane, and never goes below the floor. The image fixes the lateral geometry and the shape of the arc; the prior fixes the depth scale a short arc cannot determine. Six parameters, a batched finite-difference Jacobian, well under a second per stroke.</p>
 <figure>
-  <img src="assets/fig_bound.png" alt="Per stroke type: learned lifter error versus the Cramér-Rao bound">
-  <figcaption><b>Fig. 5 — Beating an unbiased bound is only possible by being biased.</b> Ten of fourteen stroke types fall below the bound, by up to 5.5× (smash: bound 1.23&nbsp;m, model 0.26&nbsp;m; drive: 2.54 vs 0.46&nbsp;m). The ratio model/CRLB tracks N almost monotonically: lift 1.22, clear 1.34, net shot 0.45, smash 0.21, drive 0.18. Where the observations do not determine the answer, the network supplies it from the training distribution of shots. Its low synthetic error there is evidence of a well-learned prior, not of 3D recovered from the image — and a synthetic test set shares that prior.</figcaption>
+  <img src="assets/fig_physfit.png" alt="Lifter per-frame 3D versus physics-refined trajectories, side and top view">
+  <figcaption><b>Fig. 4 — Refinement on a real rally (9 strokes).</b> Grey: the lifter's per-frame output. Colour: refined trajectories, sampled at every video frame including the ones the tracker missed. Median frame-to-frame jitter (second difference) drops from 0.075 to 0.018&nbsp;m/frame², matching the truth's 0.042 on synthetic data.</figcaption>
 </figure>
+<div class="tw"><table>
+<tr><th>held-out synthetic (n = 400)</th><th>3D error, median / mean (m)</th><th>jitter (m/frame²)</th></tr>
+<tr><td>ground truth</td><td>—</td><td>0.042</td></tr>
+<tr><td>lifter</td><td>0.254 / 0.365</td><td>0.099</td></tr>
+<tr><td>physics only — no prior, fixed drag, lifter initialisation</td><td>0.300 / 0.608</td><td>—</td></tr>
+<tr><td><b>lifter + physics</b></td><td><b>0.220</b> / 0.318</td><td><b>0.043</b></td></tr>
+<tr><td>&emsp;+ net and floor constraints</td><td>0.221 / 0.320</td><td>—</td></tr>
+<tr><td>&emsp;+ per-stroke drag coefficient</td><td>0.232 / 0.337</td><td>—</td></tr>
+</table></div>
+<p>The per-type split previews §9. On lifts (N&nbsp;≈&nbsp;27) physics alone beats the lifter (0.104 vs 0.202&nbsp;m): where the image says enough, no prior is needed. On smashes (N&nbsp;≈&nbsp;4) physics alone gives 1.117&nbsp;m, next to the Cramér–Rao bound of 1.23&nbsp;m, and the prior brings it to 0.230&nbsp;m. Refinement is where the two combine, cutting the synthetic median error by 13%.</p>
 
 <h2 id="real">7. Real footage</h2>
 <p>Real rallies were tracked with TrackNetV3 (best checkpoint, 0.940 validation accuracy; detection 9–92% per venue) and lifted with the same model through the same calibrated cameras. There is no 3D truth, so the reconstruction is scored against what the annotation and physics do know: every stroke must clear the net, and both ends of every stroke carry an annotated court position — a real horizontal anchor the model never sees.</p>
@@ -195,24 +224,20 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
   <div><b>0.24 → 0.76 m</b><span>median position error, synthetic → real (endpoint; p90 3.71&nbsp;m)</span></div>
   <div><b>3–7%</b><span>share of the endpoint error attributable to calibration; the rest is depth</span></div>
 </div>
-<figure>
-  <img src="assets/fig_sim2real.png" alt="Per stroke type: real physical validity against synthetic test error and against N">
-  <figcaption><b>Fig. 6 — What predicts real-world validity.</b> Per stroke type, the fraction of real reconstructions that clear the net against (left) the synthetic-test error everyone reports, Spearman −0.31, and (right) the observability number N, Spearman +0.60. The smash looks as good as a clear on the synthetic test (0.26 vs 0.21&nbsp;m) yet sits well below the lifts on real footage (82.4% vs 93.1%); the block is the least valid (69.6%). With six stroke types of 12–33 strokes each, these correlations are directional rather than decisive. Raw endpoint errors per type are confounded by where the stroke ends — the court resolves at 8.8&nbsp;px/m near the far baseline and 110&nbsp;px/m near the camera — so net clearance is the per-type metric here.</figcaption>
-</figure>
 <div class="tw"><table>
-<tr><th>stroke type</th><th>N</th><th>CRLB (m)</th><th>synthetic test (m)</th><th>real: clears net</th></tr>
-<tr><td>殺球 smash</td><td>3.7</td><td>1.232</td><td>0.255</td><td>82.4%</td></tr>
-<tr><td>擋小球 block</td><td>8.6</td><td>0.583</td><td>0.324</td><td class="bad">69.6%</td></tr>
-<tr><td>放小球 net shot</td><td>9.8</td><td>0.619</td><td>0.282</td><td>84.8%</td></tr>
-<tr><td>切球 drop</td><td>8.9</td><td>0.458</td><td>0.293</td><td class="good">100.0%</td></tr>
-<tr><td>長球 clear</td><td>23.0</td><td>0.160</td><td>0.214</td><td>91.7%</td></tr>
-<tr><td>挑球 lift</td><td>27.0</td><td>0.183</td><td>0.225</td><td class="good">93.1%</td></tr>
+<tr><th>real tracked strokes (n = 177, no 3D truth)</th><th>clears the net</th><th>endpoint error, median / p90 (m)</th><th>start error (m)</th><th>jitter (m/frame²)</th></tr>
+<tr><td>lifter</td><td>85.0%</td><td>0.76 / 3.71</td><td>1.00</td><td>0.123</td></tr>
+<tr><td>lifter + physics</td><td class="bad">76.1%</td><td>0.90 / 6.45</td><td>1.38</td><td>0.034</td></tr>
+<tr><td><b>&emsp;+ net and floor constraints</b> (used in the demo)</td><td class="good">99.3%</td><td>0.86 / 4.29</td><td>1.37</td><td>0.033</td></tr>
+<tr><td>&emsp;+ tighter prior (σ = 0.25 m)</td><td class="good">98.6%</td><td>0.78 / 3.70</td><td>1.17</td><td>0.030</td></tr>
+<tr><td>&emsp;+ per-stroke drag coefficient</td><td class="good">99.3%</td><td>0.85 / 3.70</td><td>1.18</td><td>0.031</td></tr>
+<tr><td>MonoTrack-style fit (§8)</td><td class="bad">55.6%</td><td>3.30 / 13.27</td><td>3.07</td><td>—</td></tr>
 </table></div>
+<p>Two things should be said plainly about refinement here. The synthetic gain does not transfer: on real footage it leaves the endpoint error where the lifter had it (0.76 → 0.78–0.86&nbsp;m median). The synthetic strokes were generated by the same drag model the refinement assumes — an inverse crime — and a real shuttle, tracked by a real detector at 4&nbsp;px residual, is not that model; fitting the drag per stroke recovers the terminal velocity to 0.4&nbsp;m/s on synthetic data and changes nothing on real data. What refinement does buy is plausibility: every stroke becomes a possible flight, 99% clear the net, and the jitter matches the truth's, at no cost in accuracy. Net validity for the constrained variants is partly definitional — the constraint enforces it — which is why the unconstrained lifter's 85.0% is the number we compare against MonoTrack, and why plausibility and accuracy are reported separately throughout.</p>
 <p class="note">Calibration is not the limiting term. At the endpoint the depth ambiguity vanishes (the shuttle is on a known plane), so calibration becomes the leading camera-side error — and it still inflates the endpoint error by only 3–7%. The endpoint error is set by depth, not by the camera: 0.76&nbsp;m is an order of magnitude more than 1.7&nbsp;px of calibration error can produce anywhere on the court.</p>
 
 <h2 id="monotrack">8. Comparison with MonoTrack-style physics fitting</h2>
 <p>MonoTrack reconstructs each shot by fitting launch position, velocity and a per-shot drag coefficient under forward-Euler quadratic drag, minimising an L<sub>6</sub> reprojection loss with SLSQP. We re-implemented that step from its public code and ran it on the same 2D tracks and the same calibrated cameras as the lifter — the comparison the paper needs is the 3D-from-2D step on identical input. Deviations from the original (no hit detector, so each annotated stroke is one shot; the receiving-player drift term is dropped) are documented in the baseline's source.</p>
-<h3>Held-out synthetic strokes (true 3D known, n = 400)</h3>
 <div class="tw"><table>
 <tr><th>stroke type</th><th>n</th><th>lifter (m)</th><th>MonoTrack-style fit (m)</th><th>ratio</th></tr>
 <tr><td>長球 clear</td><td>22</td><td>0.140</td><td>0.277</td><td>2.0×</td></tr>
@@ -223,47 +248,36 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 <tr><td>擋小球 block</td><td>55</td><td>0.340</td><td>0.968</td><td>2.8×</td></tr>
 <tr><td><b>all</b> (median / mean)</td><td>400</td><td><b>0.254</b> / 0.365</td><td><b>1.018</b> / 1.365</td><td>4.0×</td></tr>
 </table></div>
-<p>The physics fit is worst exactly where N is lowest — on smashes its 2.31&nbsp;m sits <em>above</em> the 1.23&nbsp;m Cramér–Rao bound, as an unbiased estimator must — while the lifter's 0.25&nbsp;m sits below the bound. The two methods bracket the bound from opposite sides: the comparison is not evidence that the lifter extracts more from the image, but that it brings a prior the physics fit does not have.</p>
-<h3>Real tracked strokes (n = 177, no 3D truth)</h3>
-<div class="tw"><table>
-<tr><th>metric</th><th>lifter</th><th>MonoTrack-style fit</th></tr>
-<tr><td>clears the net</td><td class="good">85.0%</td><td class="bad">55.6%</td></tr>
-<tr><td>median net clearance</td><td>+0.28 m</td><td>+0.10 m</td></tr>
-<tr><td>endpoint error vs annotation, median / p90</td><td>0.76 / 3.71 m</td><td>3.30 / 13.27 m</td></tr>
-<tr><td>start error vs annotation, median</td><td>1.00 m</td><td>3.07 m</td></tr>
-<tr><td>net clearance by type — smash / drop / net shot / block / clear / lift</td><td>82 / 100 / 85 / 70 / 92 / 93 %</td><td>40 / 25 / 45 / 50 / 83 / 100 %</td></tr>
-</table></div>
-<p class="note">Both methods consumed identical TrackNetV3 tracks and identical calibrated cameras. The baseline reproduces MonoTrack's reconstruction step (per-shot launch state and drag coefficient, forward-Euler quadratic drag, L<sub>6</sub> reprojection loss, SLSQP) but not its hit detector or receiving-player term, so each annotated stroke is fitted as one shot; MonoTrack's full pipeline may do better on its own segmentation. Its real-footage numbers are consistent with what its authors reported being unable to measure.</p>
+<p>On real footage the same comparison gives <b>85.0% vs 55.6%</b> physical validity and 0.76&nbsp;m vs 3.30&nbsp;m median endpoint error — a gap of 29 percentage points in validity. The mechanism is visible in the table: the physics fit is worst exactly where the arc is shortest, and on smashes its 2.31&nbsp;m sits <em>above</em> the 1.23&nbsp;m Cramér–Rao bound, as an unbiased estimator must, while the lifter's 0.25&nbsp;m sits below it. The two methods bracket the bound from opposite sides. That is not evidence that the lifter extracts more from the image; it is evidence that sim-to-real training supplied a prior over real shot distributions which per-shot optimisation, starting from scratch on every stroke, does not have.</p>
+<p class="note">Both methods consumed identical TrackNetV3 tracks and identical calibrated cameras. The baseline reproduces MonoTrack's reconstruction step but not its hit detector or receiving-player term, so each annotated stroke is fitted as one shot; MonoTrack's full pipeline may do better on its own segmentation. Its real-footage numbers are consistent with what its authors reported being unable to measure.</p>
 
-<h2 id="physics">9. Physics refinement: one launch state per stroke</h2>
-<p>The lifter predicts one depth per frame with no temporal coupling, so its 3D track jitters and does not look like a flight (grey dots below). Refinement replaces it with the nearest physically possible trajectory: a single launch position and velocity, integrated under the quadratic-drag model of §3.2 (terminal velocity 6.8&nbsp;m/s, RK4), fitted per stroke to (a) the observed 2D track — reprojection residual, σ&nbsp;=&nbsp;2&nbsp;px — and (b) the lifter's 3D estimate as a soft prior (σ&nbsp;=&nbsp;0.5&nbsp;m, Huber), plus two one-sided constraints that hold for every stroke a rally continues from: the path clears the net cord where it crosses the net plane and never goes below the floor. The division of labour is the one §5–6 predict: the image fixes the lateral geometry and the shape of the arc, the prior fixes the depth scale that a short arc cannot determine. Six parameters, a batched finite-difference Jacobian, well under a second per stroke.</p>
+<h2 id="observability">9. Observability: when the prior, not the image, is answering</h2>
+<p>A sim-to-real model that reports a low error on synthetic test data has proved only that it learned the simulator's distribution. To say more, we need a quantity that separates what the image determines from what the prior supplies — computable without 3D truth, so that it also works on real footage.</p>
+<p>A constant-velocity 3D motion projects to a straight image line whose arc-length runs as a Möbius function of time. Fitting that model to the observed track and taking the residual — in units of the 2D noise — isolates exactly the signature that gravity and drag leave in the image. We call it <b>N</b>. It uses no 3D information at all.</p>
 <figure>
-  <img src="assets/fig_physfit.png" alt="Lifter per-frame 3D versus physics-refined trajectories, side and top view">
-  <figcaption>The demo rally (9 strokes). Grey: the lifter's per-frame output. Colour: refined trajectories, sampled at every video frame including the ones the tracker missed. Median frame-to-frame jitter (second difference) drops from 0.075 to 0.018&nbsp;m/frame².</figcaption>
+  <img src="assets/fig_observability.png" alt="Observability number N versus the Cramér-Rao lower bound, log-log">
+  <figcaption><b>Fig. 5 — N predicts the Cramér–Rao bound.</b> 7,994 anchored strokes through the ten measured cameras. The bound (Fisher information of the six launch parameters, propagated to 3D position) follows CRLB&nbsp;∝&nbsp;N<sup>−0.98</sup> (R²&nbsp;=&nbsp;0.83; Spearman −0.92). N is not a proxy for track length: controlling for frame count, the partial correlation is −0.59, and at a fixed frame count the low-N and high-N quartiles still differ by 1.5–2.3× in CRLB. The stroke-type ordering emerges on its own and spans 16×.</figcaption>
 </figure>
-<h3>Held-out synthetic strokes (true 3D known, n = 400, same draw as §8)</h3>
+<p>With the bound in hand, the lifter's synthetic error decomposes. It sits honestly above the bound where N is high and <em>below</em> it where N is low — and beating an unbiased bound is only possible by being biased, which for a sim-to-real model means the training distribution is answering.</p>
+<figure>
+  <img src="assets/fig_bound.png" alt="Per stroke type: learned lifter error versus the Cramér-Rao bound">
+  <figcaption><b>Fig. 6 — Where the sim-to-real prior takes over.</b> Ten of fourteen stroke types fall below the bound, by up to 5.5× (smash: bound 1.23&nbsp;m, model 0.26&nbsp;m; drive: 2.54 vs 0.46&nbsp;m). The ratio model/CRLB tracks N almost monotonically: lift 1.22, clear 1.34, net shot 0.45, smash 0.21, drive 0.18. This is what a good prior is <em>for</em> — it is why the lifter beats per-shot physics fitting by 9.4× on smashes — but a synthetic test set shares that prior, so it cannot measure how far the prior travels.</figcaption>
+</figure>
+<p>The consequence is a practical diagnostic for sim-to-real transfer, and it is testable: if the prior is doing the work where N is low, then real-footage validity should follow N and not the synthetic test error. It does.</p>
+<figure>
+  <img src="assets/fig_sim2real.png" alt="Per stroke type: real physical validity against synthetic test error and against N">
+  <figcaption><b>Fig. 7 — N predicts which strokes survive the transfer; synthetic error does not.</b> Per stroke type, the fraction of real reconstructions that clear the net against (left) the synthetic-test error everyone reports, Spearman −0.31, and (right) the observability number N, Spearman +0.60. The smash looks as good as a clear on the synthetic test (0.26 vs 0.21&nbsp;m) yet sits well below the lifts on real footage (82.4% vs 93.1%). With six stroke types of 12–33 strokes each these correlations are directional rather than decisive.</figcaption>
+</figure>
 <div class="tw"><table>
-<tr><th>method</th><th>3D error, median / mean (m)</th><th>jitter (m/frame²)</th></tr>
-<tr><td>ground truth</td><td>—</td><td>0.042</td></tr>
-<tr><td>lifter (§6)</td><td>0.254 / 0.365</td><td>0.099</td></tr>
-<tr><td>physics only — no prior, fixed drag, lifter initialisation</td><td>0.300 / 0.608</td><td>—</td></tr>
-<tr><td><b>lifter + physics</b></td><td><b>0.220</b> / 0.318</td><td><b>0.043</b></td></tr>
-<tr><td>&emsp;+ net and floor constraints</td><td>0.221 / 0.320</td><td>—</td></tr>
-<tr><td>&emsp;+ per-stroke drag coefficient</td><td>0.232 / 0.337</td><td>—</td></tr>
-<tr><td>MonoTrack-style fit (§8)</td><td>1.018 / 1.365</td><td>—</td></tr>
+<tr><th>stroke type</th><th>N</th><th>CRLB (m)</th><th>synthetic test (m)</th><th>real: clears net</th></tr>
+<tr><td>殺球 smash</td><td>3.7</td><td>1.232</td><td>0.255</td><td>82.4%</td></tr>
+<tr><td>擋小球 block</td><td>8.6</td><td>0.583</td><td>0.324</td><td class="bad">69.6%</td></tr>
+<tr><td>放小球 net shot</td><td>9.8</td><td>0.619</td><td>0.282</td><td>84.8%</td></tr>
+<tr><td>切球 drop</td><td>8.9</td><td>0.458</td><td>0.293</td><td class="good">100.0%</td></tr>
+<tr><td>長球 clear</td><td>23.0</td><td>0.160</td><td>0.214</td><td>91.7%</td></tr>
+<tr><td>挑球 lift</td><td>27.0</td><td>0.183</td><td>0.225</td><td class="good">93.1%</td></tr>
 </table></div>
-<p>The per-type split repeats §6's message. On lifts (N&nbsp;≈&nbsp;27) physics alone beats the lifter (0.104 vs 0.202&nbsp;m): where the image says enough, it needs no prior. On smashes (N&nbsp;≈&nbsp;4) physics alone gives 1.117&nbsp;m, next to the 1.23&nbsp;m bound, and the prior brings it to 0.230&nbsp;m. Refinement is where the two are combined, and on synthetic strokes it cuts the median error by 13%.</p>
-<h3>Real tracked strokes (n = 177, no 3D truth)</h3>
-<div class="tw"><table>
-<tr><th>method</th><th>clears the net</th><th>endpoint error, median / p90 (m)</th><th>start error (m)</th><th>jitter (m/frame²)</th></tr>
-<tr><td>lifter</td><td>85.0%</td><td>0.76 / 3.71</td><td>1.00</td><td>0.123</td></tr>
-<tr><td>lifter + physics</td><td class="bad">76.1%</td><td>0.90 / 6.45</td><td>1.38</td><td>0.034</td></tr>
-<tr><td><b>&emsp;+ net and floor constraints</b> (used in the demo)</td><td class="good">99.3%</td><td>0.86 / 4.29</td><td>1.37</td><td>0.033</td></tr>
-<tr><td>&emsp;+ tighter prior (σ = 0.25 m)</td><td class="good">98.6%</td><td>0.78 / 3.70</td><td>1.17</td><td>0.030</td></tr>
-<tr><td>&emsp;+ per-stroke drag coefficient</td><td class="good">99.3%</td><td>0.85 / 3.70</td><td>1.18</td><td>0.031</td></tr>
-<tr><td>MonoTrack-style fit</td><td class="bad">55.6%</td><td>3.30 / 13.27</td><td>3.07</td><td>—</td></tr>
-</table></div>
-<p>Two things should be said plainly. First, the synthetic gain does not transfer: on real footage refinement leaves the endpoint error where the lifter had it (0.76 → 0.78–0.86&nbsp;m median). The synthetic strokes were generated by the same drag model the refinement assumes — an inverse crime — and a real shuttle, tracked by a real detector at 4&nbsp;px residual, is not that model. Fitting the drag per stroke recovers the terminal velocity to 0.4&nbsp;m/s on synthetic data and changes nothing on real data. Second, what refinement does buy is plausibility: every stroke is now a possible flight, 99% clear the net, and the jitter matches the truth's — at no cost in accuracy. Plausibility and accuracy are different quantities. A trajectory that looks right is not evidence that it is right, which is §6's lesson one level up, and one more reason the field's synthetic-only evaluations cannot be trusted to rank methods on real footage.</p>
+<p class="note">Raw endpoint errors per type are confounded by where the stroke ends — the court resolves at 8.8&nbsp;px/m near the far baseline and 110&nbsp;px/m near the camera — so net clearance is the per-type metric here. Read together, Figs. 5–7 say that N is the quantity to report alongside any monocular 3D result: it is available on the footage you actually care about, before any reconstruction exists.</p>
 
 <h2 id="viewer-section">10. Interactive 3D model</h2>
 <p>The calibrated court, net, broadcast camera frustum and forty reconstructed trajectories, exported from Blender. Drag to orbit, scroll to zoom.</p>
@@ -277,11 +291,19 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 </div>
 
 <h2 id="limits">11. Limitations</h2>
-<p>Real-footage validation rests on proxies: net clearance and annotated court positions at stroke ends. Rally-final floor landings — the one true 3D anchor — were unusable because the tracker loses the shuttle as it lands (0 of 10 candidates with ≥5 detections); tracking more of the 1,936 available rallies is the direct fix. Tracker coverage limited the real set to 177 of 9,875 candidate strokes. An earlier evaluation pass packed tracked frames contiguously instead of placing them at their true frame indices as in training; it reported 79.9% validity and 0.87&nbsp;m, the corrected pass reported here gives 85.0% and 0.76&nbsp;m — both are in the project logs, and the difference is the packing, not the model. The self-calibration residual sits at 1.65&nbsp;px, decomposed as 1.06&nbsp;px of court-detection inconsistency plus 0.61&nbsp;px from reconciling the net; lens distortion, line placement and camera drift were each tested and ruled out (lines straight to 0.12&nbsp;px, drift 0.04&nbsp;px, line offsets 1.2&nbsp;mm median). The net tape sits a measured 15&nbsp;mm below the nominal cord height, consistently across venues.</p>
+<p>Real-footage validation rests on proxies: net clearance and annotated court positions at stroke ends. Rally-final floor landings — the one true 3D anchor — were unusable because the tracker loses the shuttle as it lands (0 of 10 candidates with ≥5 detections); tracking more of the 1,936 available rallies is the direct fix. Tracker coverage limited the real set to 177 of 9,875 candidate strokes, from 8 of the 10 calibrated matches. An earlier evaluation pass packed tracked frames contiguously instead of placing them at their true frame indices as in training; it reported 79.9% validity and 0.87&nbsp;m, the corrected pass reported here gives 85.0% and 0.76&nbsp;m — both are in the project logs, and the difference is the packing, not the model. The self-calibration residual sits at 1.65&nbsp;px, decomposed as 1.06&nbsp;px of court-detection inconsistency plus 0.61&nbsp;px from reconciling the net; lens distortion, line placement and camera drift were each tested and ruled out (lines straight to 0.12&nbsp;px, drift 0.04&nbsp;px, line offsets 1.2&nbsp;mm median). The net tape sits a measured 15&nbsp;mm below the nominal cord height, consistently across venues. Finally, the simulator's shuttle is a point mass with a constant drag coefficient: it has no skirt deformation, no post-impact flip, and its noise model is Gaussian rather than the structured failure of a real tracker.</p>
+
+<h2 id="future">12. Future work</h2>
+<p>The open problems follow the same three properties as the method.</p>
+<p><b>Fast, turned from damage into a measurement.</b> Motion blur is treated as noise by 2D trackers, but the streak's length is the shuttle's image displacement during the exposure — a velocity measurement inside a single frame, exactly where the trajectory is least observable. We measured that the streak-length-to-image-speed slope is a property of the individual broadcast, varying 8.8× across venues, so it must be self-calibrated per video rather than assumed. Feeding local image patches to the lifter alongside the coordinates would inject that velocity constraint into short smash arcs directly. A first end-to-end version — the TrackNetV4 backbone with a depth head, trained on physics-refined 3D labels — is running now.</p>
+<p><b>Small, and the jitter it causes.</b> A 6.9&nbsp;px target means a one-pixel wobble in the heatmap centre is a large fraction of the object, and along a ray 30&nbsp;m from the camera that pixel becomes tens of centimetres. Synthetic observations currently carry Gaussian 2&nbsp;px noise and 5% random dropout, which is not how a real tracker fails: detections are lost at impact, occluded by racket and player, and biased toward the leading edge of a streak. Learning that failure distribution from the tracker's own behaviour on real frames and injecting it during training targets the residual sim-to-real gap directly — the 0.76&nbsp;m real endpoint error against 0.24&nbsp;m synthetic.</p>
+<p><b>Faster than the drag model.</b> The generator uses quadratic drag at a fixed 6.8&nbsp;m/s terminal velocity. Above roughly 300&nbsp;km/h the skirt compresses and the drag coefficient varies strongly with Reynolds number, and the shuttle takes about 0.05&nbsp;s to flip nose-forward after impact. A velocity-dependent drag coefficient and a flip phase would make the synthetic data honest in exactly the high-speed regime where §9 shows the prior carrying the most weight — and where the real-footage validity is lowest.</p>
+<p><b>Downstream 3D analytics.</b> With trajectories in metres, stroke height, clearance over the net and true 3D landing distributions replace the 2D top-down proxies current match analysis uses. The same reconstruction plus a neural scene representation would give a free-viewpoint replay — a player's-eye or line-judge view — from single-camera broadcast footage.</p>
 
 <h2 id="cite">BibTeX</h2>
 <pre>@misc{chang2026shuttle3d,
-  title  = {Observability Limits of Monocular Shuttlecock 3D Reconstruction from Broadcast Badminton Video},
+  title  = {SimTrack3D: Monocular 3D Trajectory Prediction of Fast-Moving
+            Shuttlecocks via Broadcast-Calibrated Sim-to-Real Transfer},
   author = {Chang, Gino},
   year   = {2026},
   note   = {Project page}
