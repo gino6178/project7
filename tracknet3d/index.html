@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrackNet3D</title>
+<meta name="description" content="TrackNet3D: predicting metric 3D shuttlecock coordinates directly from raw broadcast frames, with no camera calibration at inference, trained on the pseudo-labels of the SimTrack3D pipeline.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#141b1e; --muted:#5c6b70; --line:#dfe6e5; --ground:#fbfcfc; --surface:#ffffff;
+  --acc:#0e7c7b; --acc2:#e8552f; --soft:#e9f3f2; --warm:#fdf3ee;
+  --serif:"Source Serif 4",Georgia,serif; --sans:"Source Sans 3","Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:48px 24px 96px}
+header{text-align:center;margin-bottom:36px}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(26px,4vw,38px);line-height:1.2;margin:0 0 14px;text-wrap:balance}
+.authors{font-size:17px;margin:0 0 4px}
+.affil{color:var(--muted);font-size:15px;margin:0 0 18px}
+.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.links a{font-family:var(--mono);font-size:13px;padding:7px 14px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;background:var(--surface)}
+.links a:hover{border-color:var(--acc);color:var(--acc)}
+.links a.on{border-color:var(--acc);color:var(--acc);background:var(--soft)}
+figure{margin:28px 0}
+figure img{display:block;width:100%;border:1px solid var(--line);border-radius:4px;background:#fff}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:52px 0 12px;padding-top:14px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:600;margin:26px 0 8px}
+p{margin:0 0 14px}
+.abstract{font-size:16.5px;background:var(--soft);padding:20px 24px;border-radius:6px;border-left:3px solid var(--acc)}
+.status{background:var(--warm);border:1px solid #f0c9b6;border-left:3px solid var(--acc2);border-radius:6px;padding:16px 20px;margin:22px 0;font-size:16px}
+.status b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:4px}
+.contrib{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px}
+.contrib li{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:4px;padding:14px 18px;font-size:16px}
+.contrib b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:3px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:18px 0}
+.kv div{background:var(--surface);padding:12px 14px}
+.kv b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;color:var(--acc)}
+.kv span{font-size:13px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:12px 0 6px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.02em;border-bottom:2px solid var(--line)}
+td.bad{color:var(--acc2);font-weight:600}
+td.good{color:var(--acc);font-weight:600}
+td.todo{color:var(--muted);font-style:italic}
+.tw{overflow-x:auto}
+.note{font-size:14.5px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:14px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:3px}
+pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 16px;border-radius:6px;overflow-x:auto}
+.foot{color:var(--muted);font-size:13.5px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>TrackNet3D: Direct End-to-End Monocular 3D Shuttlecock Trajectories from Broadcast Video</h1>
+  <p class="authors">Gino Chang</p>
+  <p class="affil">Paper 2 of 2 &middot; Project page &middot; 2026</p>
+  <div class="links">
+    <a href="../">← SimTrack3D (paper 1)</a><a class="on" href="./">TrackNet3D</a><a href="#method">Method</a><a href="#results">Results</a><a href="#open">Open items</a>
+  </div>
+</header>
+
+<div class="status">
+  <b>Status of this page</b>
+  This is a work in progress, and the page separates what has been measured from what has not. Every number in a normal table cell comes from a run in this project's logs. Cells marked <em>not yet measured</em> are exactly that: the component is designed and, where stated, implemented, but no result exists yet. Nothing on this page is a projection or a placeholder value.
+</div>
+
+<h2 style="border:0;margin-top:28px">Abstract</h2>
+<div class="abstract">
+<p>The two-stage route to monocular 3D — track the shuttle in 2D, calibrate the camera from the court, then lift — works, and <a href="../">paper 1</a> measures how well. It also needs a calibrated camera for every new video, and it throws away the image the moment the tracker reduces it to a coordinate pair. TrackNet3D asks whether a network can read the court's perspective out of the picture itself and output metric 3D directly.</p>
+<p>What makes the question askable at all is the pipeline of paper 1. It produces something that did not previously exist: real broadcast frames paired with physically valid metric 3D trajectories. Those pseudo-labels are the supervision here.</p>
+<p>The model keeps the tracker's own backbone — <b>TrackNetV5-Lite</b>, 2.54 M parameters, F1 98.06 at 4 px — and adds two branches on top of it: a local branch that keeps the 6.9-px target from being averaged away by the regression objective, and a global branch that pools the bottleneck over a coarse spatial grid, where the court lines, the net and the service-box perspective are. No camera matrix enters at inference.</p>
+<p>The result so far is a partial one, and stated as such. On matches never trained on, the model reaches <b>1.44 m</b> median 3D error against <b>2.38 m</b> for predicting the mean position, so it is reading geometry from the image; that is a long way from the <b>0.76 m</b> the calibrated two-stage lifter achieves on the same footage. The binding constraint is measured and specific: <b>ten distinct cameras</b> is not enough to learn implicit calibration, and the work in progress is to raise that number.</p>
+</div>
+
+<ul class="contrib">
+  <li><b>A camera-free formulation for metric 3D.</b> Output coordinates live in the fixed BWF court frame (6.10 × 13.40 m, net 1.55 / 1.524 m). Because the court is a specification rather than a scene, the world frame needs no calibration to define — only to <em>recover</em>, which is what the global branch is asked to do.</li>
+  <li><b>Supervision that did not exist.</b> Real frames paired with metric 3D, generated by the sim-to-real loop of paper 1 and filtered by physics: 4,741 labelled frames over 177 strokes, in 10 clips from 8 matches, with the frames the tracker missed filled in from the fitted flight rather than interpolated.</li>
+  <li><b>An evaluation that can tell implicit calibration from memorisation.</b> A model can satisfy a training set of eight venues by memorising a depth prior per venue, which looks identical to implicit calibration on held-out strokes from those same venues. Every result here is split into strokes held out inside training venues and whole matches never seen, and only the second decides the question.</li>
+</ul>
+
+<h2 id="why">1. Why the two-stage pipeline is worth replacing</h2>
+<p>Paper 1's pipeline is accurate but has three properties that limit deployment.</p>
+<p><b>It needs a calibrated camera per video.</b> The lifter consumes world-space viewing rays, so a new broadcast has to be calibrated before it can be reconstructed at all. Paper 1 does this from the court lines and the net cord, which works, but it is a per-venue step that fails on footage where the court is partly out of frame.</p>
+<p><b>Errors cascade.</b> A tracker miss at the moment of impact, or a court line mistaken for the shuttle, propagates into the fit with no way for the later stage to question the earlier one.</p>
+<p><b>It discards the image.</b> Reducing a frame to <code>(u, v)</code> throws away the motion-blur streak, which records the shuttle's displacement during the exposure — a direct velocity measurement in a single frame, and precisely the quantity that is missing where the trajectory is least observable. We measured that this cue is real but venue-dependent: the streak-length-to-image-speed slope varies <b>8.8×</b> across the matches we examined, so it has to be self-calibrated per video rather than assumed.</p>
+
+<h2 id="method">2. Method</h2>
+<figure>
+  <img src="../assets/fig_arch.png" alt="Dual-branch architecture: shared TrackNetV5-Lite trunk, local heatmap branch, global context branch, temporal fusion, 3D head">
+  <figcaption><b>Fig. 1 — Dual-branch architecture.</b> A shared trunk feeds two branches with different jobs. The local branch keeps the original heatmap supervision, so the small target is never averaged away by the regression task, and samples a feature exactly where the heatmap fires. The global branch pools the bottleneck over a coarse spatial grid — the court lines, the net and the service-box perspective — and produces the scene context vector that stands in for a calibration matrix. The two are fused per frame and read out as world coordinates.</figcaption>
+</figure>
+
+<h3>2.1 Backbone</h3>
+<p>The trunk is TrackNetV5-Lite, loaded with its released weights. Its properties matter here for a reason beyond speed: the supervision is a few thousand pseudo-labelled windows from a handful of venues, so the smaller trunk is the one with a chance of not memorising them.</p>
+<div class="tw"><table>
+<tr><th>backbone</th><th>parameters</th><th>sequence</th><th>F1 at 4 px</th></tr>
+<tr><td>TrackNetV4 (expV9)</td><td>11.3 M</td><td>8 frames</td><td>97.99</td></tr>
+<tr><td><b>TrackNetV5-Lite</b></td><td><b>2.54 M</b></td><td>5 frames</td><td><b>98.06</b></td></tr>
+</table></div>
+<p class="note">Both were tried. On the current label set the V4 trunk with a ray-depth head failed to beat a constant-depth baseline, and the V5-Lite trunk with the dual-branch head does beat the mean-position baselines; the honest reading is that with this much supervision the smaller trunk is the one that fits.</p>
+
+<h3>2.2 Local branch: keeping a 6.9-px target</h3>
+<p>A 3D regression loss applied to a whole frame has an easy minimum: predict where the shuttle usually is. The original heatmap head is therefore kept, with its supervision, so the trunk is still required to find the shuttle; the 3D head then reads a feature sampled by bilinear interpolation exactly at the heatmap's soft-argmax, rather than from a globally pooled vector in which a 6.9-px object contributes almost nothing.</p>
+
+<h3>2.3 Global branch: implicit calibration</h3>
+<p>The bottleneck feature map is pooled to a coarse 4 × 8 grid and projected to a context vector. The pooling is spatial on purpose: what encodes the camera is <em>where</em> the court lines converge and how tall the net stands in the frame, which a global average would destroy. This vector is added to every frame's token before temporal fusion, so the depth read-out is conditioned on the view.</p>
+
+<h3>2.4 Output and losses</h3>
+<p>The head emits <code>(X, Y, Z)</code> in court metres directly, initialised at the court centre so training starts from a defined, harmless state. The loss has three terms, one per job: a weighted binary cross-entropy on the heatmap that keeps the tracker intact, an L1 on the 3D coordinates against the pseudo-labels, and a second-difference penalty that suppresses frame-to-frame jitter.</p>
+
+<h3>2.5 Where the labels come from</h3>
+<figure>
+  <img src="../assets/fig_system.png" alt="The sim-to-real loop from paper 1, whose steps 6 and 7 produce this paper's training data">
+  <figcaption><b>Fig. 2 — The pipeline of <a href="../">paper 1</a>, seen from this paper's side.</b> The forward pass builds a training set from measured cameras and anchored physics; the return pass applies the trained lifter and its physics refinement back to real tracked rallies, producing metric 3D on the original frames. Step 6 is this paper's supervision, and step 7 is this paper.</figcaption>
+</figure>
+<p>Every stroke with enough tracker coverage is refined to a single physically valid launch state, then sampled at every frame between the first and last detection — so frames the tracker missed also carry a label, drawn from the fitted flight rather than interpolated between neighbours.</p>
+<div class="kv">
+  <div><b>4,741</b><span>labelled frames (4,369 tracked, 372 filled from the fit)</span></div>
+  <div><b>177</b><span>strokes, 10 clips, 8 matches</span></div>
+  <div><b>10</b><span>distinct cameras available — the binding constraint</span></div>
+  <div><b>0.78–1.26</b><span>2nd–98th percentile of relative ray depth in the labels</span></div>
+</div>
+
+<h2 id="results">3. Results so far</h2>
+<p>Two test splits, and the distinction is the whole point. <em>Seen</em> holds out 20% of the strokes from the training venues, so the cameras are familiar. <em>Unseen</em> holds out two entire matches, so the model must read a view it has never been trained on. A model that memorised a depth prior per venue scores well on the first and badly on the second.</p>
+<div class="tw"><table>
+<tr><th>split</th><th>TrackNet3D, 3D median (m)</th><th>baseline: venue mean (m)</th><th>baseline: global mean (m)</th><th>2D detection (px)</th></tr>
+<tr><td>seen — held-out strokes, training venues</td><td class="good">1.26</td><td>2.37</td><td>2.29</td><td>5.0</td></tr>
+<tr><td><b>unseen — two whole matches</b></td><td class="good"><b>1.44</b></td><td>2.38</td><td>2.38</td><td>5.3</td></tr>
+</table></div>
+<p>Both splits beat the baselines that ignore the image, and the unseen split is close to the seen one — the model is not simply recalling which venue it is looking at. Splitting the error shows where the difficulty sits: the height component is <b>0.39 m</b> on unseen matches, while the horizontal component is <b>1.34 m</b>. Height is well constrained because the court plane fixes it; the horizontal error is depth along the viewing ray, which is exactly the quantity paper 1's observability analysis says is hardest to recover.</p>
+<h3>Against the calibrated two-stage pipeline, on the same real footage</h3>
+<div class="tw"><table>
+<tr><th>method</th><th>needs a calibrated camera?</th><th>real endpoint error, median (m)</th><th>clears the net</th></tr>
+<tr><td>MonoTrack-style per-shot fit</td><td>yes</td><td class="bad">3.30</td><td class="bad">55.6%</td></tr>
+<tr><td>Shuttle3D lifter (paper 1)</td><td>yes</td><td class="good">0.76</td><td>85.0%</td></tr>
+<tr><td>&emsp;+ physics refinement with court constraints</td><td>yes</td><td>0.86</td><td class="good">99.3%</td></tr>
+<tr><td><b>TrackNet3D (this paper)</b></td><td><b>no</b></td><td class="todo">not yet measured on this metric</td><td class="todo">not yet measured</td></tr>
+</table></div>
+<p class="note">The last row is deliberately empty. TrackNet3D is currently scored per frame against the pseudo-labels, not per stroke against the annotated court positions, so its number is not comparable to the rows above and will not be presented as if it were. The comparable evaluation is listed under open items.</p>
+
+<h2 id="open">4. What is not done</h2>
+<p>Stated plainly, because a page that hides them is worth less than one that lists them.</p>
+<div class="tw"><table>
+<tr><th>item</th><th>state</th><th>why it matters</th></tr>
+<tr><td>Camera diversity</td><td>10 of a planned ~45</td><td>The binding constraint. Implicit calibration cannot be demonstrated on ten views; a second dataset of 35 further matches with per-frame 2D ground truth is being calibrated to raise it.</td></tr>
+<tr><td>Label volume</td><td>177 of ~9,900 candidate strokes</td><td>Limited by tracker coverage. 883 further rally clips from the same ten matches are being tracked now, which should multiply the label set severalfold.</td></tr>
+<tr><td>Streak–velocity encoder</td><td>designed, not implemented</td><td>The measurement that motivates it exists (streak slope varies 8.8× across venues, so it is self-calibrating per video), but no model in this project consumes image patches yet.</td></tr>
+<tr><td>Per-stroke real-footage evaluation</td><td>not run</td><td>Needed to compare with the two-stage pipeline on net clearance and endpoint error.</td></tr>
+<tr><td>Runtime measurement</td><td>not run</td><td>No frames-per-second figure will be quoted until one is measured on this model.</td></tr>
+<tr><td>Zero-shot on new tournaments</td><td>not run</td><td>Requires the calibration work above, since a new tournament first has to be labelled to be scored.</td></tr>
+</table></div>
+<p>One further caveat is structural rather than incremental: TrackNet3D is trained on the output of the pipeline in paper 1, so any unmodelled physics there — constant drag coefficient, no skirt deformation at smash speeds, no post-impact flip — becomes a bounded systematic bias here. The pseudo-labels are also produced by a model that paper 1 shows is prior-dominated exactly where observability is lowest, which means this model can inherit that prior without inheriting the evidence for it.</p>
+
+<h2 id="cite">BibTeX</h2>
+<pre>@misc{chang2026tracknet3d,
+  title  = {TrackNet3D: Direct End-to-End Monocular 3D Shuttlecock
+            Trajectory Prediction from Broadcast Video},
+  author = {Chang, Gino},
+  year   = {2026},
+  note   = {Project page, work in progress}
+}</pre>
+
+<p class="foot">Court and net geometry follow BWF specifications. Backbone: TrackNetV5-Lite. Supervision: the sim-to-real pipeline of paper 1. All numbers on this page come from the experiment logs of this project; unmeasured quantities are marked as such rather than estimated.</p>
+
+</div>
+</body>
+</html>
