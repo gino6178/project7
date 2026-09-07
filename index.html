@@ -97,8 +97,12 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
 <p>A ground-plane homography cannot recover the intrinsics — on this data the two Zhang constraints disagree by 65%. It pins down everything on the floor and nothing above it, and the missing degree of freedom is exactly the vertical one a trajectory is made of. The net supplies it: a structure of known height (1.55&nbsp;m at the posts, sagging to 1.524&nbsp;m) at a known court position, spanning the image as a near-straight line that can be located to sub-pixel precision.</p>
 <p>We locate the painted court lines (sub-pixel ridge, 167–312 samples per image) and the net cord (270 samples, 0.14&nbsp;px fit residual), then fit a rigid pinhole camera to court&nbsp;+&nbsp;net in a right-handed frame. The court plane alone would fit any camera exactly (a plane-to-image map is an 8-DoF homography); the off-plane net is what makes the calibration determined.</p>
 <figure>
+  <img src="assets/fig_pipeline.png" alt="How one broadcast frame is fitted to the Blender court: real frame, detections, render, blend, and the fitted camera in plan and side view">
+  <figcaption><b>Fig. 2 — Fitting one broadcast frame to the court model.</b> (a) the frame with players removed by a temporal median; (b) sub-pixel court-line and net-cord samples found in the image; (c) the Blender court rendered from the rigid camera fitted to those samples; (d) a 50/50 blend of (a) and (c); (e, f) where that camera sits: 10.6&nbsp;m up, 30&nbsp;m from the court centre, 19° elevation, 2933&nbsp;px focal length — recovered from the court and net alone, with no other metadata.</figcaption>
+</figure>
+<figure>
   <img src="assets/render_test.png" alt="Blender render of the calibrated court from the fitted broadcast camera">
-  <figcaption><b>Fig. 2 — The calibrated camera reproduced in Blender.</b> Rendering the court model from the fitted camera and re-detecting lines in the render agrees with the real frame to <b>0.78&nbsp;px</b> on the court lines and <b>2.3&nbsp;px</b> on the net cord. An independent physical check — the net cord's sag, which the detector never sees — comes out at 23.5&nbsp;mm against the 26&nbsp;mm specification across ten venues.</figcaption>
+  <figcaption><b>Fig. 2b — The calibrated camera reproduced in Blender.</b> Rendering the court model from the fitted camera and re-detecting lines in the render agrees with the real frame to <b>0.78&nbsp;px</b> on the court lines and <b>2.3&nbsp;px</b> on the net cord. An independent physical check — the net cord's sag, which the detector never sees — comes out at 23.5&nbsp;mm against the 26&nbsp;mm specification across ten venues.</figcaption>
 </figure>
 
 <h3>2.2 Synthetic strokes anchored to real annotations</h3>
