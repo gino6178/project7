@@ -116,8 +116,8 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <h2 id="method">3. Architecture</h2>
 <figure>
-  <img src="../assets/fig_arch.png" alt="Dual-branch architecture: shared TrackNetV5-Lite trunk, local heatmap branch, global context branch, temporal fusion, 3D head">
-  <figcaption><b>Fig. 1 — Dual-branch architecture.</b> A shared trunk feeds two branches with different jobs. The local branch keeps the original heatmap supervision, so the small target is never averaged away by the regression task, and samples a feature exactly where the heatmap fires. The global branch pools the bottleneck over a coarse spatial grid — the court lines, the net and the service-box perspective — and produces the scene context vector that stands in for a calibration matrix. The two are fused per frame and read out as world coordinates.</figcaption>
+  <img src="../assets/fig_arch.png" alt="Dual-branch architecture: shared TrackNetV5-Lite trunk, local heatmap branch, global context branch, temporal fusion, launch-state head, drag integrator, 3D trajectory in court metres">
+  <figcaption><b>Fig. 1 — Dual-branch architecture.</b> A shared trunk feeds two branches with different jobs. The local branch keeps the original heatmap supervision, so the small target is never averaged away by the regression task, and samples a feature exactly where the heatmap fires. The global branch pools the bottleneck over a coarse spatial grid — the court lines, the net and the service-box perspective — and produces the scene context vector that stands in for a calibration matrix. The two are fused per frame, and the read-out is a launch state rather than a position per frame: six numbers that the drag equation turns into a whole trajectory, so the output cannot leave the space of flights that exist (§3.6).</figcaption>
 </figure>
 
 <h3>3.1 Problem statement</h3>
@@ -144,22 +144,61 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <div class="eq">$$\mathbf{e}_{\text{cam}}=\mathrm{MLP}\big(\mathrm{vec}\,(\mathrm{AvgPool}_{4\times 8}\,\mathbf{B})\big).$$</div>
 <p>The pooling is spatial on purpose. What encodes the camera is <em>where</em> the court lines converge and how tall the net stands in the frame, and a global average would destroy exactly that. The vector is added to every frame's token before temporal fusion, so the depth read-out is conditioned on the view.</p>
 
-<h3>3.5 Temporal fusion and 3D read-out</h3>
-<p>Per-frame tokens combine the local feature, the normalised 2D position, the detection confidence and time, and are added to the scene context before a four-layer transformer encoder. The head emits court metres directly, initialised at the court centre so training begins from a defined, harmless state:</p>
+<h3>3.5 Temporal fusion</h3>
+<p>Per-frame tokens combine the local feature, the normalised 2D position, the detection confidence and time, and are added to the scene context before a four-layer transformer encoder. The head as implemented emits court metres directly, one position per frame, initialised at the court centre so training begins from a defined, harmless state:</p>
 <div class="eq">$$\mathbf{P}_t \;=\; \mathbf{c}_{\text{court}} \;+\; \mathbf{s}\odot\mathrm{MLP}\big(\mathrm{Enc}(\mathbf{q}_{1:T})_t\big),\qquad \mathbf{c}_{\text{court}}=[3.05,\,6.70,\,1.50]^{\top}.$$</div>
+<p>Predicting each frame independently is what makes the next section necessary: nothing in this form ties consecutive positions together, so the output can be geometrically consistent with the image and still be a flight that could not happen.</p>
 
-<h3>3.6 Motion-streak velocity encoder</h3>
+<h3>3.6 Physically constrained read-out</h3>
+<p>The free head above is what the model currently trains with, and it has a failure mode worth stating precisely, because it is the reason the read-out is being changed. The evidence comes from the two-stage lifter of <a href="../">paper 1</a>, which uses the same per-frame formulation and can be measured against 11,802 held-out synthetic strokes with known 3D truth.</p>
+
+<p><b>The error is not spread out; it is a small number of discrete failures.</b> RMSE 0.596&nbsp;m sits against a per-stroke median of 0.276&nbsp;m, because the worst 1% of strokes carry 31.5% of the squared error and the worst 5% carry 56.1%. Nothing continuous explains which strokes those are — arc length, depth, along-ray alignment, speed, peak height and span all give |&rho;|&nbsp;&le;&nbsp;0.20 against the true error. They separate instead into two kinds, isolated by fitting one scalar depth rescaling per stroke:</p>
+
+<div class="tw"><table>
+<tr><th>failure</th><th>share of the worst 1%</th><th>what it looks like</th><th>does rescaling fix it</th></tr>
+<tr><td><b>depth level</b></td><td>65 of 118</td><td>correct shape, translated along the viewing ray</td><td class="good">yes — 2.65&nbsp;m → 0.40&nbsp;m</td></tr>
+<tr><td><b>depth reversal</b></td><td>53 of 118</td><td>corr(depth predicted, depth true) = −0.95: the shuttle recedes, the model says it approaches</td><td class="bad">no — 2.96&nbsp;m remains</td></tr>
+</table></div>
+
+<p>Reversals are 2.3% of all strokes and carry 26.8% of the squared error, at RMSE 2.27&nbsp;m against 0.53&nbsp;m for the rest. They concentrate in the strokes played near the net over a short arc — net kill 15.6%, net shot 7.2% — and fall to 0.5% for clears.</p>
+
+<p><b>Nothing at inference time sees them.</b> Depth along the viewing ray is invisible in 2D by construction, so a reversed reconstruction reprojects onto the observations exactly. It is also just as smooth, just as physically plausible by every test we could compute without truth, and just as contained inside the hall: rejecting the 10% of strokes with the largest residual of the equation of motion removes 15.5% of the squared error, against 67.5% for an oracle that rejects the truly worst and 10% for rejecting at random.</p>
+
+<p><b>But physics does decide the question — the model simply never gets to use it.</b> Reflecting a true depth profile about its own mean produces a trajectory with identical viewing rays, and therefore an identical 2D projection: the reversed solution in its cleanest form. Its residual of the equation of motion is 59.2&nbsp;m/s&sup2; against 0.00 for the truth, and <b>0.0% of 11,802 strokes</b> fall below 5&nbsp;m/s&sup2;. Gravity is an absolute acceleration and it fixes the depth scale without exception. What buries that signal is the head's own frame-to-frame jitter: its output sits at 66.2&nbsp;m/s&sup2; when the stroke came out right and 68.9&nbsp;m/s&sup2; when it came out reversed — indistinguishable. A soft physics penalty cannot repair this, because a per-frame head cannot reach zero residual; it can only trade data fit for smoothness, and the finite-difference floor is itself stroke-dependent, near zero for a net shot and 200&nbsp;m/s&sup2; for a drive at 30&nbsp;fps.</p>
+
+<p><b>So the constraint moves into the parameterisation.</b> The head emits a launch state and the trajectory is produced by integrating the equation of motion, which makes the residual zero by construction and leaves the network choosing only among flights that exist:</p>
+<div class="eq">$$\mathbf{P}_t=\mathbf{x}_0+\mathbf{F}(t;\mathbf{v}_0),\qquad \dot{\mathbf{v}}=\mathbf{g}-\frac{g}{v_T^{2}}\lVert\mathbf{v}\rVert\mathbf{v},\qquad v_T=6.8\ \text{m/s}.$$</div>
+<p>The two halves of that launch state are not equally hard, and the split matters for how each is trained. The equation of motion has no dependence on position, so the launch point is a pure additive offset — verified exact to 1.5&nbsp;&times;&nbsp;10<sup>&minus;14</sup>&nbsp;m on this integrator — and its gradient is perfectly conditioned however many integration steps follow. The launch <em>velocity</em> is the ill-conditioned half, since its influence on the trajectory grows with elapsed time. It is therefore supervised directly for the first 60% of training, against exact values recovered by running the generator's own two-point solver on the stored trajectories (residual median 0.0000&nbsp;m, 100% below 0.05&nbsp;m), and released afterwards so the model finishes trained end to end through the integrator.</p>
+
+<p><b>The launch position is a bird's-eye observation.</b> Where on the floor a stroke was played from is exactly what a top-down view of the court shows, and it is what pins the depth level that the arc alone cannot. What a top-down view cannot say is how high the racket met the shuttle, so a single launch degree of freedom is left free, over the 0.40–3.10&nbsp;m the labels span. On the two-stage lifter, supplying that position as an input — with ground noise added at training and test alike, because a real pipeline recovers it from a player detector rather than an annotation — has a measured effect that is about reliability rather than precision:</p>
+
+<div class="tw"><table>
+<tr><th>launch position known to</th><th>RMSE</th><th>median</th><th>gross failure &gt; 1 m</th><th>reversed</th><th>worst stroke</th></tr>
+<tr><td>not given</td><td>0.596</td><td>0.276</td><td>5.02%</td><td>2.25%</td><td>7.18&nbsp;m</td></tr>
+<tr><td>shuffled — same input, no information</td><td>0.579</td><td>0.279</td><td>5.26%</td><td>2.29%</td><td>6.53&nbsp;m</td></tr>
+<tr><td>&plusmn; 2.00&nbsp;m</td><td>0.550</td><td>0.270</td><td>4.56%</td><td>1.69%</td><td>6.61&nbsp;m</td></tr>
+<tr><td>&plusmn; 0.75&nbsp;m — what a player detector gives</td><td>0.509</td><td>0.248</td><td>3.18%</td><td>1.09%</td><td>7.24&nbsp;m</td></tr>
+<tr><td><b>&plusmn; 0.25&nbsp;m</b></td><td><b>0.421</b></td><td>0.199</td><td class="good"><b>2.29%</b></td><td class="good"><b>0.42%</b></td><td><b>4.56&nbsp;m</b></td></tr>
+</table></div>
+
+<p>The shuffled row is the control that makes the rest readable: an anchor drawn from a different stroke has the same input width and the same distribution of court positions but no information about this stroke, and it changes nothing. What the real anchor buys is a halving of the gross-failure rate and a fivefold reduction in reversals, while ordinary precision barely moves — with failures above 1&nbsp;m removed, the median error goes from 0.263&nbsp;m to 0.194&nbsp;m. It helps most exactly where the failures are: net kill 22.6% → 4.8%, defensive drive 22.5% → 4.2%, clear 3.7% → 2.4%.</p>
+
+<p>One thing it does not fix. The end of the stroke is off by more than 2&nbsp;m in 1.89% of strokes without the anchor and still 1.27% with it, because a launch anchor pins the beginning and the depth level can still drift over the flight. Anchoring both ends would close that, and a deployed system could do it — the far end is the next stroke's hit position, available offline — but this paper cannot, because the far end is what the real-domain evaluation is scored against.</p>
+
+<p class="note">Status. The failure anatomy, the reflected-trajectory test and the anchor sweep are measured, on the two-stage lifter and its synthetic held-out set. The integrated launch-state head for this end-to-end model is <span class="tbd">not implemented</span>: in the two-stage setting it is training now and has not yet converged to a comparable number, and in the end-to-end setting the launch position would have to be predicted by the network rather than supplied, since a court homography at inference is exactly what this paper does without.</p>
+
+<h3>3.7 Motion-streak velocity encoder</h3>
 <p>Under a shutter of duration Δ<i>t</i>, a shuttle moving with velocity component <b>V</b><sub>⊥</sub> orthogonal to the viewing ray at camera-space depth <i>Z<sub>c</sub></i> leaves a streak of pixel length</p>
 <div class="eq">$$\ell_t \;\approx\; f\,\frac{\lVert \mathbf{V}_{t,\perp}\rVert}{Z_{c,t}}\,\Delta t_{\text{shutter}},$$</div>
 <p>so a patch cropped at the predicted 2D peak carries the ratio of transverse speed to depth — a geometric constraint along the ray, which is what the low-observability regime of paper 1 lacks. The design is to encode that patch and concatenate it to the per-frame token.</p>
 <p class="note">This component is <span class="tbd">not implemented</span>. What is measured is the premise: the streak exists, its orientation aligns with the flight direction to a median of 0.996 for the fastest fifth of frames, its short axis is constant to 0.20&nbsp;px across a ninefold speed range, and the length-to-speed slope varies 8.8× across venues so it must be estimated per video. No model in this project consumes image patches yet.</p>
 
-<h3>3.7 Losses</h3>
+<h3>3.8 Losses</h3>
 <p>Three terms, one per job: a weighted binary cross-entropy on the heatmap that keeps the tracker intact, an L1 on the 3D coordinates against the pseudo-labels, and a second-difference penalty that suppresses frame-to-frame jitter.</p>
 <div class="eq">$$\mathcal{L}=\lambda_{\text{heat}}\,\mathcal{L}_{\text{heat}}+\lambda_{3D}\sum_t\big\lVert \mathbf{P}_t-\hat{\mathbf{P}}_t\big\rVert_1+\lambda_{\text{acc}}\sum_t\big\lVert \mathbf{P}_{t+1}-2\mathbf{P}_t+\mathbf{P}_{t-1}\big\rVert_1 .$$</div>
 <p class="note">A reprojection-consistency term, tying the predicted 3D back to the predicted 2D centre, is a natural fourth term. It is <span class="tbd">not implemented</span>: it needs a camera at training time, which is available from the pseudo-label pipeline but has not been wired in.</p>
 
-<h3>3.8 Where the labels come from</h3>
+<h3>3.9 Where the labels come from</h3>
 <figure>
   <img src="../assets/fig_system.png" alt="The sim-to-real loop from paper 1, whose steps 6 and 7 produce this paper's training data">
   <figcaption><b>Fig. 2 — The pipeline of <a href="../">paper 1</a>, seen from this paper's side.</b> The forward pass builds a training set from measured cameras and anchored physics; the return pass applies the trained lifter and its physics refinement back to real tracked rallies, producing metric 3D on the original frames. Step 6 is this paper's supervision, and step 7 is this paper.</figcaption>
@@ -183,7 +222,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <tr><td>seen — held-out strokes, training venues</td><td class="good">1.26</td><td>1.15</td><td>0.33</td><td>2.37</td><td>2.29</td></tr>
 <tr><td><b>unseen — two whole matches</b></td><td class="good"><b>1.38</b></td><td>1.27</td><td>0.39</td><td>2.38</td><td>2.38</td></tr>
 </table></div>
-<p>Both splits beat the baselines that ignore the image, and the unseen split is close to the seen one, so the model is not simply recalling which venue it is looking at. The split by component locates the difficulty: height is well constrained because the court plane fixes it, while the horizontal error is depth along the viewing ray — exactly the quantity paper 1's observability analysis says is hardest to recover, and the quantity the streak encoder of §3.6 is designed to constrain.</p>
+<p>Both splits beat the baselines that ignore the image, and the unseen split is close to the seen one, so the model is not simply recalling which venue it is looking at. The split by component locates the difficulty: height is well constrained because the court plane fixes it, while the horizontal error is depth along the viewing ray — exactly the quantity paper 1's observability analysis says is hardest to recover, and the quantity the streak encoder of §3.7 is designed to constrain.</p>
 <p class="note">Training and test diverge (training 3D loss 0.11&nbsp;m against 1.26&nbsp;m on held-out strokes), which is what a few thousand windows from eight venues predicts. This is a data problem before it is an architecture problem, and §5 lists what is being done about it.</p>
 <p>The per-frame figure above and the per-stroke figures below differ for a reason worth stating: per-frame error averages over the whole flight, including mid-arc where depth along the ray is least constrained, while the ends of a stroke sit on or near the court plane, where the geometry pins them down. The same gap appears in the two-stage pipeline of paper 1.</p>
 
@@ -230,6 +269,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <tr><td>&emsp;without the heatmap supervision</td><td class="tbd">pending</td><td class="tbd">pending</td></tr>
 <tr><td>&emsp;without the smoothness term</td><td class="tbd">pending</td><td class="tbd">pending</td></tr>
 <tr><td>&emsp;+ motion-streak encoder</td><td class="tbd">pending</td><td class="tbd">pending</td></tr>
+<tr><td>&emsp;+ integrated launch-state read-out (§3.6)</td><td class="tbd">pending</td><td class="tbd">pending</td></tr>
 </table></div>
 <p class="note">The two measured rows are complete runs; the four pending rows are single-component removals that have not been run. The comparison between the two trunks is the one ablation that is finished, and it is the one that decided the architecture.</p>
 
@@ -246,8 +286,9 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <tr><th>item</th><th>state</th><th>why it matters</th></tr>
 <tr><td>Camera diversity</td><td>10 of a planned ~44</td><td>The binding constraint, and the measured cost of it is the eleven-point drop in net clearance from familiar cameras to unseen matches (§4.3). A second dataset of 34 further matches carries per-frame 2D ground truth but no court registration, so adding it needs those courts calibrated first; a keypoint regressor for that is under leave-one-venue-out validation.</td></tr>
 <tr><td>Label volume</td><td>177 of ~9,900 candidate strokes</td><td>Limited by tracker coverage. 883 further rally clips from the same ten matches are being tracked, which should multiply the label set severalfold.</td></tr>
-<tr><td>Motion-streak encoder (§3.6)</td><td>designed, not implemented</td><td>The premise is measured; no model here consumes image patches yet. It targets the horizontal error, which dominates.</td></tr>
-<tr><td>Reprojection-consistency loss (§3.7)</td><td>not implemented</td><td>Would tie the 3D output to the 2D branch during training.</td></tr>
+<tr><td>Integrated launch-state read-out (§3.6)</td><td>motivated by measurement, not implemented here</td><td>The per-frame head fails in two discrete ways that no inference-time test detects, and 2.3% of strokes reconstructed with the depth profile reversed carry 26.8% of the squared error. Integrating a launch state removes that failure by construction. Measured on the two-stage lifter; the end-to-end version additionally has to predict the launch position rather than be given it.</td></tr>
+<tr><td>Motion-streak encoder (§3.7)</td><td>designed, not implemented</td><td>The premise is measured; no model here consumes image patches yet. It targets the horizontal error, which dominates.</td></tr>
+<tr><td>Reprojection-consistency loss (§3.8)</td><td>not implemented</td><td>Would tie the 3D output to the 2D branch during training.</td></tr>
 <tr><td>Per-stroke real-footage evaluation</td><td class="good">done (§4.3)</td><td>Same 57 held-out strokes as the two-stage pipeline: endpoint 0.97 m, net clearance 79.1%.</td></tr>
 <tr><td>Runtime</td><td class="good">done (§4.3)</td><td>497 frame-slots/s on one RTX 3090 at batch 16, bf16.</td></tr>
 <tr><td>Component ablations</td><td>not run</td><td>Four single-component removals in §4.5.</td></tr>
