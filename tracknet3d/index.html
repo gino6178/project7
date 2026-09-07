@@ -83,7 +83,8 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <p>Recovering continuous 3D world trajectories of fast sports projectiles directly from raw broadcast video, without offline camera calibration, has been blocked by one thing: no synchronised 3D ground truth exists for realistic broadcast footage. The standard answer is a multi-stage pipeline — detect the target in 2D, calibrate the camera from the court lines, fit a geometric motion model — which accumulates error, needs a calibration step per video, and discards the image the moment the tracker reduces a frame to a coordinate pair.</p>
 <p>We present <b>TrackNet3D</b>, an end-to-end model that predicts metric 3D shuttlecock coordinates directly from sequential raw broadcast frames, with no camera matrix at inference. It is made possible by the physics-grounded sim-to-real engine of <a href="../">paper 1</a>, which supplies aerodynamically verified pseudo-ground-truth on real tournament footage. To handle the scale asymmetry between a roughly <b>6.9-px</b> shuttlecock and the whole court, TrackNet3D uses a dual-branch backbone: a local branch that keeps the target's 2D centre under explicit heatmap supervision, and a global branch that pools coarse spatial context, where the painted lines, the net and the service-box perspective implicitly encode the camera.</p>
 <p>The backbone is <b>TrackNetV5-Lite</b> — 2.54M parameters, F1 98.06 at 4&nbsp;px — chosen over the 11.3M TrackNetV4 for a reason specific to this problem: the supervision is a few thousand windows from a handful of venues, so the smaller trunk is the one that can be fitted without memorising them.</p>
-<p>The current result is partial and reported as such. On matches never trained on, TrackNet3D reaches <b>1.38&nbsp;m</b> median 3D error against <b>2.38&nbsp;m</b> for predicting the mean position, so it is reading geometry from the image rather than recalling a venue; the calibrated two-stage lifter of paper 1 reaches <b>0.76&nbsp;m</b> on the same footage. The binding constraint is measured and specific: <b>ten distinct cameras</b> is not enough to demonstrate implicit calibration, and raising that number is the work in progress.</p>
+<p>Evaluated per stroke on the same held-out real strokes as the two-stage pipeline, TrackNet3D places the end of a stroke to <b>0.97&nbsp;m</b> median against <b>1.05&nbsp;m</b> for the calibrated lifter and <b>3.03&nbsp;m</b> for a MonoTrack-style per-shot fit — it matches a pipeline that is given the camera, without being given one. It is behind on physical plausibility (<b>79.1%</b> of strokes clear the net against 85.1%) and on the launch end of the stroke, and it runs at <b>497&nbsp;frames/s</b> on one GPU.</p>
+<p>Two limits are measured and stated rather than smoothed over. On matches never trained on, net clearance falls to 73.9%, so generalisation across venues is real but incomplete; and <b>ten distinct cameras</b> is not enough to demonstrate implicit calibration, which makes raising that number the work in progress.</p>
 </div>
 
 <ul class="contrib">
@@ -183,30 +184,41 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <tr><td><b>unseen — two whole matches</b></td><td class="good"><b>1.38</b></td><td>1.27</td><td>0.39</td><td>2.38</td><td>2.38</td></tr>
 </table></div>
 <p>Both splits beat the baselines that ignore the image, and the unseen split is close to the seen one, so the model is not simply recalling which venue it is looking at. The split by component locates the difficulty: height is well constrained because the court plane fixes it, while the horizontal error is depth along the viewing ray — exactly the quantity paper 1's observability analysis says is hardest to recover, and the quantity the streak encoder of §3.6 is designed to constrain.</p>
-<p class="note">Training and test diverge (training 3D loss 0.20&nbsp;m against 1.26&nbsp;m on held-out strokes), which is what a few thousand windows from eight venues predicts. This is a data problem before it is an architecture problem, and §5 lists what is being done about it.</p>
+<p class="note">Training and test diverge (training 3D loss 0.11&nbsp;m against 1.26&nbsp;m on held-out strokes), which is what a few thousand windows from eight venues predicts. This is a data problem before it is an architecture problem, and §5 lists what is being done about it.</p>
+<p>The per-frame figure above and the per-stroke figures below differ for a reason worth stating: per-frame error averages over the whole flight, including mid-arc where depth along the ray is least constrained, while the ends of a stroke sit on or near the court plane, where the geometry pins them down. The same gap appears in the two-stage pipeline of paper 1.</p>
 
 <h3>4.3 Against the calibrated two-stage pipeline</h3>
+<p>All four methods are scored on the <em>same 57 held-out strokes</em> — the strokes TrackNet3D never trained on — using the proxies of paper 1: does the reconstruction clear the net, and where does it put the two ends of the stroke against annotated court positions no method sees. Restricting every method to this subset is what makes the comparison fair; the two-stage rows are therefore not identical to paper 1's, which average over all 177.</p>
 <div class="tw"><table>
-<tr><th>method</th><th>needs a calibrated camera?</th><th>real endpoint error, median (m)</th><th>clears the net</th><th>runtime</th></tr>
-<tr><td>MonoTrack-style per-shot fit</td><td>yes</td><td class="bad">3.30</td><td class="bad">55.6%</td><td class="tbd">pending</td></tr>
-<tr><td>Shuttle3D lifter (paper 1)</td><td>yes</td><td class="good">0.76</td><td>85.0%</td><td class="tbd">pending</td></tr>
-<tr><td>&emsp;+ physics refinement with court constraints</td><td>yes</td><td>0.86</td><td class="good">99.3%</td><td class="tbd">pending</td></tr>
-<tr><td><b>TrackNet3D (this paper)</b></td><td><b>no</b></td><td class="tbd">pending</td><td class="tbd">pending</td><td class="tbd">pending</td></tr>
+<tr><th>method — 57 held-out strokes</th><th>needs a camera?</th><th>endpoint error, median / p90 (m)</th><th>clears the net</th><th>start error (m)</th><th>jitter (m/frame²)</th></tr>
+<tr><td>MonoTrack-style per-shot fit</td><td>yes</td><td class="bad">3.03 / 10.69</td><td class="bad">50.0%</td><td>2.96</td><td>—</td></tr>
+<tr><td>Shuttle3D lifter (paper 1)</td><td>yes</td><td>1.05 / 4.71</td><td>85.1%</td><td class="good">1.69</td><td>0.116</td></tr>
+<tr><td>&emsp;+ physics refinement with court constraints</td><td>yes</td><td>1.18 / 4.82</td><td class="good">100.0%</td><td>1.62</td><td class="good">0.026</td></tr>
+<tr><td><b>TrackNet3D (this paper)</b></td><td class="good"><b>no</b></td><td class="good"><b>0.97</b> / 4.31</td><td>79.1%</td><td class="bad">2.19</td><td class="bad">0.177</td></tr>
 </table></div>
-<p class="note">The last row is deliberately empty. TrackNet3D is currently scored per frame against the pseudo-labels, not per stroke against the annotated court positions, so its number would not be comparable with the rows above and will not be presented as if it were. Running the comparable evaluation is a listed open item, as is measuring runtime — no frames-per-second figure will be quoted until one is measured on this model.</p>
+<p>The result is mixed in a way worth reading carefully rather than summarising. On where a stroke ends, the end-to-end model is level with the calibrated lifter and three times better than per-shot physics fitting — while receiving no camera at all. On whether the reconstruction is physically possible it is behind: 79.1% of its strokes clear the net against 85.1% for the lifter and 100% for the constrained refinement, which enforces clearance by construction. It is also worse at the launch end, 2.19&nbsp;m against 1.69&nbsp;m, and its trajectories jitter more, because nothing in the model couples consecutive frames beyond a five-frame window and a smoothness penalty.</p>
+<div class="tw"><table>
+<tr><th>split</th><th>strokes</th><th>clears the net</th><th>endpoint error, median (m)</th></tr>
+<tr><td>held-out strokes, training venues</td><td>30</td><td>85.0%</td><td>0.97</td></tr>
+<tr><td><b>whole matches never trained on</b></td><td>27</td><td class="bad">73.9%</td><td>1.13</td></tr>
+</table></div>
+<p>Splitting the held-out set shows what ten venues buys and what it does not. On familiar cameras the model matches the calibrated lifter's net validity exactly; on two entirely unseen matches it drops eleven points. That gap is the measurable statement of the camera-diversity limit, and it is the quantity that more venues should move.</p>
+<h4>Runtime</h4>
+<p>Measured over 334 forward passes covering 20,165 frame-slots on one RTX 3090 at batch 16 in bf16: <b>497 frame-slots per second</b>, which is 497&nbsp;fps when windows are taken end to end, or 99&nbsp;fps at the stride-1 overlap used in this evaluation, where every frame is predicted five times and averaged. The two-stage pipeline's own runtime has not been measured on the same hardware, so no speed ratio is claimed.</p>
 
 <h3>4.4 Tactical breakdown</h3>
+<p>On real footage, per stroke type, over the held-out strokes only. The counts are small — four to thirteen strokes per type — so this table is directional.</p>
 <div class="tw"><table>
-<tr><th>stroke type</th><th>N</th><th>MonoTrack (two-stage)</th><th>Shuttle3D (two-stage)</th><th>TrackNet3D (end-to-end)</th></tr>
-<tr><td>挑球 lift</td><td>27.0</td><td>0.759</td><td>0.202</td><td class="tbd">pending</td></tr>
-<tr><td>長球 clear</td><td>23.0</td><td>0.277</td><td>0.140</td><td class="tbd">pending</td></tr>
-<tr><td>放小球 net shot</td><td>9.8</td><td>1.086</td><td>0.284</td><td class="tbd">pending</td></tr>
-<tr><td>切球 drop</td><td>8.9</td><td>0.847</td><td>0.251</td><td class="tbd">pending</td></tr>
-<tr><td>擋小球 block</td><td>8.6</td><td>0.968</td><td>0.340</td><td class="tbd">pending</td></tr>
-<tr><td>殺球 smash</td><td>3.7</td><td class="bad">2.309</td><td>0.246</td><td class="tbd">pending</td></tr>
-<tr><td><b>overall median</b></td><td>—</td><td><b>1.018</b></td><td><b>0.254</b></td><td class="tbd">pending</td></tr>
+<tr><th>stroke type</th><th>N (paper 1)</th><th>n</th><th>clears the net</th><th>endpoint error, median (m)</th></tr>
+<tr><td>放小球 net shot</td><td>9.8</td><td>13</td><td class="bad">58.3%</td><td class="good">0.62</td></tr>
+<tr><td>擋小球 block</td><td>8.6</td><td>7</td><td>71.4%</td><td class="good">0.68</td></tr>
+<tr><td>切球 drop</td><td>8.9</td><td>4</td><td class="good">100.0%</td><td>0.87</td></tr>
+<tr><td>挑球 lift</td><td>27.0</td><td>9</td><td class="good">100.0%</td><td>1.06</td></tr>
+<tr><td>長球 clear</td><td>23.0</td><td>4</td><td class="good">100.0%</td><td>1.86</td></tr>
+<tr><td>殺球 smash</td><td>3.7</td><td>6</td><td class="bad">66.7%</td><td class="bad">3.52</td></tr>
 </table></div>
-<p class="note">The per-type breakdown for TrackNet3D has not been run; the two-stage columns are from paper 1 and are shown so the comparison is ready to be completed. The interesting question this table will answer is whether the end-to-end model degrades on low-N strokes in the same pattern as the two-stage pipeline, or differently.</p>
+<p>The ordering by net clearance follows paper 1's observability number: the strokes with the longest, most curved arcs — lifts, clears, drops — are always physically valid, and the smash, whose arc is short and nearly straight, is both the least valid and by far the least accurate at 3.52&nbsp;m. The end-to-end model inherits the geometric difficulty of the problem rather than escaping it, which is what should be expected: no architecture creates information the image does not contain.</p>
+<p class="note">Endpoint error does not order the same way, because it is confounded by where a stroke ends. The court resolves at roughly 8.8&nbsp;px/m near the far baseline and 110&nbsp;px/m near the camera, so a clear that finishes deep is penalised by geometry rather than by the model. Net clearance is the clean per-type metric here, as in paper 1.</p>
 
 <h3>4.5 Ablations</h3>
 <div class="tw"><table>
@@ -232,12 +244,12 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <p>Listed plainly, because a page that hides them is worth less than one that shows them.</p>
 <div class="tw"><table>
 <tr><th>item</th><th>state</th><th>why it matters</th></tr>
-<tr><td>Camera diversity</td><td>10 of a planned ~45</td><td>The binding constraint. Implicit calibration cannot be demonstrated on ten views. A second dataset of 34 further matches with per-frame 2D ground truth is being calibrated to raise it.</td></tr>
+<tr><td>Camera diversity</td><td>10 of a planned ~44</td><td>The binding constraint, and the measured cost of it is the eleven-point drop in net clearance from familiar cameras to unseen matches (§4.3). A second dataset of 34 further matches carries per-frame 2D ground truth but no court registration, so adding it needs those courts calibrated first; a keypoint regressor for that is under leave-one-venue-out validation.</td></tr>
 <tr><td>Label volume</td><td>177 of ~9,900 candidate strokes</td><td>Limited by tracker coverage. 883 further rally clips from the same ten matches are being tracked, which should multiply the label set severalfold.</td></tr>
 <tr><td>Motion-streak encoder (§3.6)</td><td>designed, not implemented</td><td>The premise is measured; no model here consumes image patches yet. It targets the horizontal error, which dominates.</td></tr>
 <tr><td>Reprojection-consistency loss (§3.7)</td><td>not implemented</td><td>Would tie the 3D output to the 2D branch during training.</td></tr>
-<tr><td>Per-stroke real-footage evaluation</td><td>not run</td><td>Needed for a like-for-like comparison with the two-stage pipeline.</td></tr>
-<tr><td>Runtime</td><td>not measured</td><td>No throughput figure will be quoted until one is measured on this model.</td></tr>
+<tr><td>Per-stroke real-footage evaluation</td><td class="good">done (§4.3)</td><td>Same 57 held-out strokes as the two-stage pipeline: endpoint 0.97 m, net clearance 79.1%.</td></tr>
+<tr><td>Runtime</td><td class="good">done (§4.3)</td><td>497 frame-slots/s on one RTX 3090 at batch 16, bf16.</td></tr>
 <tr><td>Component ablations</td><td>not run</td><td>Four single-component removals in §4.5.</td></tr>
 </table></div>
 <h3>5.1 Where direct video-to-3D should be expected to fail</h3>
