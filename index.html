@@ -64,12 +64,20 @@ pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 1
   <p class="authors">Gino Chang</p>
   <p class="affil">Project page &middot; 2026</p>
   <div class="links">
-    <a href="#method">Method</a><a href="#calibration">Calibration</a><a href="#observability">Observability</a><a href="#real">Real footage</a><a href="#monotrack">vs. MonoTrack</a><a href="#viewer-section">3D viewer</a>
+    <a href="#demo">Demo</a><a href="#method">Method</a><a href="#calibration">Calibration</a><a href="#observability">Observability</a><a href="#real">Real footage</a><a href="#monotrack">vs. MonoTrack</a><a href="#viewer-section">3D viewer</a>
   </div>
 </header>
 
 <div class="teaser"><img src="assets/hero.png" alt="Reconstructed shuttle trajectories over a calibrated court"></div>
 <figcaption style="text-align:center;margin-bottom:8px">Reconstructed 3D shuttle trajectories over the calibrated court model. Hue encodes tactical family: <span style="color:#e8552f">attack</span>, <span style="color:#d9a32e">flat</span>, <span style="color:#3b82c4">lift / clear</span>, <span style="color:#2fa98c">net play</span>.</figcaption>
+
+<h2 id="demo" style="border:0;margin-top:28px">Demo</h2>
+<figure style="margin-top:8px">
+  <video controls muted playsinline loop preload="metadata" poster="assets/hero.png" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
+    <source src="assets/demo_side_by_side.mp4" type="video/mp4">
+  </video>
+  <figcaption><b>Left:</b> a real rally (Thailand Masters 2025, R32) with the TrackNetV3 2D track. <b>Right:</b> the court model calibrated from that broadcast's own court lines and net, orbiting, with the reconstructed 3D trajectory drawn stroke by stroke in sync — nine strokes, colour per stroke. Reconstruction is the two-stage lifter on real tracked frames; gaps the tracker missed inside a stroke are interpolated, frames outside any stroke show nothing.</figcaption>
+</figure>
 
 <h2 style="border:0;margin-top:28px">Abstract</h2>
 <div class="abstract">
