@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observability Limits of Monocular Shuttlecock 3D Reconstruction</title>
+<meta name="description" content="Monocular 3D shuttlecock trajectory reconstruction from broadcast badminton video: measured cameras, an image-computable observability number, and why synthetic test error does not predict real-world validity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#141b1e; --muted:#5c6b70; --line:#dfe6e5; --ground:#fbfcfc; --surface:#ffffff;
+  --acc:#0e7c7b; --acc2:#e8552f; --soft:#e9f3f2;
+  --serif:"Source Serif 4",Georgia,serif; --sans:"Source Sans 3","Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:48px 24px 96px}
+header{text-align:center;margin-bottom:36px}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,4.2vw,40px);line-height:1.2;margin:0 0 14px;text-wrap:balance}
+.authors{font-size:17px;margin:0 0 4px}
+.affil{color:var(--muted);font-size:15px;margin:0 0 18px}
+.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.links a{font-family:var(--mono);font-size:13px;padding:7px 14px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;background:var(--surface)}
+.links a:hover{border-color:var(--acc);color:var(--acc)}
+.teaser{margin:28px 0 8px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.teaser img{display:block;width:100%}
+figure{margin:28px 0}
+figure img{display:block;width:100%;border:1px solid var(--line);border-radius:4px;background:#fff}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:52px 0 12px;padding-top:14px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:600;margin:26px 0 8px;color:var(--ink)}
+p{margin:0 0 14px}
+.abstract{font-size:16.5px;background:var(--soft);padding:20px 24px;border-radius:6px;border-left:3px solid var(--acc)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:18px 0}
+.kv div{background:var(--surface);padding:12px 14px}
+.kv b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;color:var(--acc)}
+.kv span{font-size:13px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:12px 0 6px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.02em;border-bottom:2px solid var(--line)}
+td.bad{color:var(--acc2);font-weight:600}
+td.good{color:var(--acc);font-weight:600}
+.tw{overflow-x:auto}
+.note{font-size:14.5px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:14px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:3px}
+.viewer{position:relative;width:100%;aspect-ratio:16/9;background:#0b1417;border-radius:6px;overflow:hidden;border:1px solid #223038;cursor:grab}
+.viewer canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+.viewer .hud{position:absolute;left:12px;top:10px;font-family:var(--mono);font-size:12px;color:#8fb6af;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13.5px;color:var(--muted);margin-top:10px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
+pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 16px;border-radius:6px;overflow-x:auto}
+.foot{color:var(--muted);font-size:13.5px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Observability Limits of Monocular Shuttlecock 3D Reconstruction from Broadcast Badminton Video</h1>
+  <p class="authors">Gino Chang</p>
+  <p class="affil">Project page &middot; 2026</p>
+  <div class="links">
+    <a href="#method">Method</a><a href="#calibration">Calibration</a><a href="#observability">Observability</a><a href="#real">Real footage</a><a href="#monotrack">vs. MonoTrack</a><a href="#viewer-section">3D viewer</a>
+  </div>
+</header>
+
+<div class="teaser"><img src="assets/hero.png" alt="Reconstructed shuttle trajectories over a calibrated court"></div>
+<figcaption style="text-align:center;margin-bottom:8px">Reconstructed 3D shuttle trajectories over the calibrated court model. Hue encodes tactical family: <span style="color:#e8552f">attack</span>, <span style="color:#d9a32e">flat</span>, <span style="color:#3b82c4">lift / clear</span>, <span style="color:#2fa98c">net play</span>.</figcaption>
+
+<h2 style="border:0;margin-top:28px">Abstract</h2>
+<div class="abstract">
+<p>Recovering the 3D flight of a shuttlecock from a single broadcast camera is attractive and, for badminton, unsolved: no public 3D ground truth exists, and every published method validates on real footage with 2D reprojection error alone. We show that this practice cannot distinguish a correct reconstruction from a wrong one. On synthetic strokes with known 3D, solutions whose 2D reprojection differs by only <b>0.07–0.20&nbsp;px</b> differ in true 3D error by up to <b>46×</b> for smashes.</p>
+<p>We derive a per-stroke <b>observability number N</b> — the departure of the image track from anything an unaccelerated 3D motion could produce, in units of tracker noise — that needs no 3D truth and predicts the Cramér–Rao bound on 3D error (<b>CRLB ∝ N<sup>−0.98</sup></b>, R²&nbsp;=&nbsp;0.83, partial ρ&nbsp;=&nbsp;−0.59 after controlling for track length). A learned 2D→3D lifter trained on 78,702 synthetic strokes anchored to real annotations and rendered through <b>ten cameras calibrated from real broadcasts</b> reaches 0.24&nbsp;m median error on held-out synthetic data — yet <b>beats the unbiased bound by up to 5.5× exactly where N is lowest</b>, i.e. where the answer comes from the prior rather than the image. On real TrackNetV3-tracked rallies its error rises to <b>0.87&nbsp;m</b> and physical validity falls from 98.9% to <b>79.9%</b>; per stroke type, that validity is predicted by N (Spearman&nbsp;+0.83) but not by the synthetic test error (−0.31).</p>
+</div>
+
+<div class="kv">
+  <div><b>46×</b><span>3D-error spread hidden inside 0.2&nbsp;px of 2D reprojection (smash)</span></div>
+  <div><b>N<sup>−0.98</sup></b><span>Cramér–Rao bound vs. the image-only observability number</span></div>
+  <div><b>10</b><span>broadcast cameras calibrated from the court and net alone</span></div>
+  <div><b>0.24 → 0.87 m</b><span>lifter error, synthetic test → real footage</span></div>
+</div>
+
+<h2 id="motivation">1. The evaluation problem</h2>
+<p>A point object seen from one camera lies on a ray; nothing in a single frame fixes where along it. What makes a shuttle trajectory recoverable at all is that gravity and air drag bend the flight over time, and the bend leaves a signature in the image. When the observed arc is short or nearly aligned with the viewing direction, that signature is small — and reprojection error stops saying anything about depth.</p>
+<figure>
+  <img src="assets/fig_identifiability.png" alt="Profile-likelihood: 2D RMSE and true 3D error versus assumed launch height, clear vs smash">
+  <figcaption><b>Fig. 1 — Reprojection error is blind to 3D error on fast, short shots.</b> Fixing the launch height <i>z</i><sub>0</sub> and re-fitting the other five launch parameters to a noisy 2D track (σ&nbsp;=&nbsp;2&nbsp;px, true 3D known). For a clear (63 frames) the 2D residual has a usable minimum at the truth. For a smash, solutions with 3D error from 0.06 to 2.78&nbsp;m sit within 0.20&nbsp;px of each other in 2D — below any tracker's noise floor. The same holds under a mismatched drag model, so it is not an artefact of fitting with the generating model.</figcaption>
+</figure>
+<p>This matters because the field's current state of the art (MonoTrack, CVPR-W 2022; SynthNet, MMSports 2024; Uplifting Table Tennis, WACV 2026) validates real-footage 3D with exactly this metric, and states explicitly that no 3D ground truth exists for broadcast video.</p>
+
+<h2 id="method">2. Method</h2>
+<h3>2.1 Calibrating the broadcast camera from the court and the net</h3>
+<p>A ground-plane homography cannot recover the intrinsics — on this data the two Zhang constraints disagree by 65%. It pins down everything on the floor and nothing above it, and the missing degree of freedom is exactly the vertical one a trajectory is made of. The net supplies it: a structure of known height (1.55&nbsp;m at the posts, sagging to 1.524&nbsp;m) at a known court position, spanning the image as a near-straight line that can be located to sub-pixel precision.</p>
+<p>We locate the painted court lines (sub-pixel ridge, 167–312 samples per image) and the net cord (270 samples, 0.14&nbsp;px fit residual), then fit a rigid pinhole camera to court&nbsp;+&nbsp;net in a right-handed frame. The court plane alone would fit any camera exactly (a plane-to-image map is an 8-DoF homography); the off-plane net is what makes the calibration determined.</p>
+<figure>
+  <img src="assets/render_test.png" alt="Blender render of the calibrated court from the fitted broadcast camera">
+  <figcaption><b>Fig. 2 — The calibrated camera reproduced in Blender.</b> Rendering the court model from the fitted camera and re-detecting lines in the render agrees with the real frame to <b>0.78&nbsp;px</b> on the court lines and <b>2.3&nbsp;px</b> on the net cord. An independent physical check — the net cord's sag, which the detector never sees — comes out at 23.5&nbsp;mm against the 26&nbsp;mm specification across ten venues.</figcaption>
+</figure>
+
+<h3>2.2 Synthetic strokes anchored to real annotations</h3>
+<p>Every training stroke is tied to one real annotated stroke: its start and end court positions and its flight time come from the ShuttleSet-format labels (13,129 strokes, 17 matches); only the height profile — the one quantity never observed — is synthesised, by solving a boundary-value problem under quadratic drag (terminal velocity 6.8&nbsp;m/s). 99.8% of 24,000 solves converge, and 98.9% of the resulting trajectories clear the net although the solver never sees it. Strokes are then projected through the ten <em>measured</em> cameras with 2&nbsp;px tracker noise and 5% dropout: <b>78,702 samples</b>, split by anchor so no real stroke appears on both sides.</p>
+
+<h3>2.3 Lifter</h3>
+<p>A 2.7M-parameter transformer receives, per frame, the world-space viewing ray through the detection, the ray's floor intersection, a near-horizontal flag and time, plus the camera centre; it predicts relative depth along each ray and the 3D point is recovered geometrically. Calibration therefore lives in the geometry rather than being relearned. Depth, not height, is the output: 1.9% of frames look <em>up</em> at the shuttle from these 5–13&nbsp;m cameras, and a height parameterisation diverges there.</p>
+
+<h2 id="calibration">3. Measured broadcast geometry</h2>
+<p>Synthetic pipelines usually <em>sample</em> camera parameters from assumed ranges. Calibrating real broadcasts instead gives a measured distribution — and it does not overlap the ranges assumed for the closest published pipeline.</p>
+<figure>
+  <img src="assets/fig_cameras.png" alt="Measured broadcast camera distance and elevation versus the ranges sampled by prior work">
+  <figcaption><b>Fig. 3 — Real badminton broadcast cameras vs. assumed ranges.</b> Ten calibrated cameras: focal 1623–3756&nbsp;px (24.9° median horizontal FOV), height 4.9–13.3&nbsp;m, distance 12–39&nbsp;m, elevation 9.9–20.5°. The camera ranges sampled by Uplifting Table Tennis (WACV 2026) — 7–17&nbsp;m, 30–70° — were chosen for table tennis and contain none of these; the point is not that they are wrong, but that camera geometry has to be measured per sport rather than transferred.</figcaption>
+</figure>
+<div class="tw"><table>
+<tr><th>Quantity</th><th>min</th><th>median</th><th>max</th></tr>
+<tr><td>focal length (px, 1280-wide)</td><td>1623</td><td>2745</td><td>3756</td></tr>
+<tr><td>camera height (m)</td><td>4.9</td><td>7.5</td><td>13.3</td></tr>
+<tr><td>distance to court centre (m)</td><td>12.0</td><td>25.6</td><td>38.7</td></tr>
+<tr><td>elevation (°)</td><td>9.9</td><td>15.7</td><td>20.5</td></tr>
+<tr><td>net-cord sag, measured (spec 26 mm)</td><td>16.0</td><td>23.5</td><td>33.4</td></tr>
+</table></div>
+<p class="note">Three quality gates select the ten: net-cord residual &lt;1&nbsp;px, sag within 10&nbsp;mm of specification, and far-baseline depth resolution ≥12&nbsp;px/m. The sag gate catches failures the fit residual misses — three venues fitted the cord to 0.2–0.4&nbsp;px yet implied sags of 9, −15 and −49&nbsp;mm. A fit residual proves you fitted <em>something</em>; only an independent physical invariant proves you fitted the right thing.</p>
+
+<h2 id="observability">4. An image-computable observability number</h2>
+<p>A constant-velocity 3D motion projects to a straight image line whose arc-length runs as a Möbius function of time. Fitting that model to the observed track and taking the residual — in units of the 2D noise — isolates exactly the signature gravity and drag leave in the image. We call it <b>N</b>. It uses no 3D information, so it can be computed on real footage before reconstructing anything.</p>
+<figure>
+  <img src="assets/fig_observability.png" alt="Observability number N versus the Cramér-Rao lower bound, log-log">
+  <figcaption><b>Fig. 4 — N predicts the Cramér–Rao bound.</b> 7,994 anchored strokes through the ten measured cameras. The bound (Fisher information of the six launch parameters, propagated to 3D position) follows CRLB&nbsp;∝&nbsp;N<sup>−0.98</sup> (R²&nbsp;=&nbsp;0.83; Spearman −0.92). N is not a proxy for track length: controlling for frame count, the partial correlation is −0.59, and at a fixed frame count the low-N and high-N quartiles still differ by 1.5–2.3× in CRLB. The stroke-type ordering emerges on its own and spans 16×.</figcaption>
+</figure>
+
+<h2 id="bound">5. A learned lifter beats the bound — where the image says least</h2>
+<p>The lifter reaches 0.364&nbsp;m mean / 0.244&nbsp;m median 3D error on held-out synthetic strokes (baselines: constant depth 2.04&nbsp;m; assume-on-the-floor 9.66&nbsp;m). Compared per stroke type against the Cramér–Rao bound computed on the same strokes, it sits honestly above the bound where N is high, and <em>below</em> it where N is low.</p>
+<figure>
+  <img src="assets/fig_bound.png" alt="Per stroke type: learned lifter error versus the Cramér-Rao bound">
+  <figcaption><b>Fig. 5 — Beating an unbiased bound is only possible by being biased.</b> Ten of fourteen stroke types fall below the bound, by up to 5.5× (smash: bound 1.23&nbsp;m, model 0.26&nbsp;m; drive: 2.54 vs 0.46&nbsp;m). The ratio model/CRLB tracks N almost monotonically: lift 1.22, clear 1.34, net shot 0.45, smash 0.21, drive 0.18. Where the observations do not determine the answer, the network supplies it from the training distribution of shots. Its low synthetic error there is evidence of a well-learned prior, not of 3D recovered from the image — and a synthetic test set shares that prior.</figcaption>
+</figure>
+
+<h2 id="real">6. Real footage</h2>
+<p>Real rallies were tracked with TrackNetV3 (best checkpoint, 0.940 validation accuracy; detection 9–92% per venue) and lifted with the same model through the same calibrated cameras. There is no 3D truth, so the reconstruction is scored against what the annotation and physics do know: every stroke must clear the net, and both ends of every stroke carry an annotated court position — a real horizontal anchor the model never sees.</p>
+<div class="kv">
+  <div><b>177</b><span>real strokes reconstructed, 8 matches</span></div>
+  <div><b>98.9% → 79.9%</b><span>physically valid (clears the net), synthetic → real</span></div>
+  <div><b>0.24 → 0.87 m</b><span>median position error, synthetic → real (endpoint)</span></div>
+  <div><b>23.6 px</b><span>real endpoint error, normalised by local depth resolution; calibration is 1.7&nbsp;px</span></div>
+</div>
+<figure>
+  <img src="assets/fig_sim2real.png" alt="Per stroke type: real physical validity against synthetic test error and against N">
+  <figcaption><b>Fig. 6 — What predicts real-world validity.</b> Per stroke type, the fraction of real reconstructions that clear the net against (left) the synthetic-test error everyone reports, Spearman −0.31, and (right) the observability number N, Spearman +0.83. The smash looks as good as a clear on the synthetic test (0.26 vs 0.21&nbsp;m) and is the least valid stroke on real footage (55.6% vs 93.5%). Raw endpoint errors per type are confounded by where the stroke ends — the court resolves at 8.8&nbsp;px/m near the far baseline and 110&nbsp;px/m near the camera — so net clearance is the per-type metric here.</figcaption>
+</figure>
+<div class="tw"><table>
+<tr><th>stroke type</th><th>N</th><th>CRLB (m)</th><th>synthetic test (m)</th><th>real: clears net</th></tr>
+<tr><td>殺球 smash</td><td>3.7</td><td>1.232</td><td>0.255</td><td class="bad">55.6%</td></tr>
+<tr><td>擋小球 block</td><td>8.6</td><td>0.583</td><td>0.324</td><td>68.2%</td></tr>
+<tr><td>放小球 net shot</td><td>9.8</td><td>0.619</td><td>0.282</td><td>85.7%</td></tr>
+<tr><td>切球 drop</td><td>8.9</td><td>0.458</td><td>0.293</td><td>92.9%</td></tr>
+<tr><td>長球 clear</td><td>23.0</td><td>0.160</td><td>0.214</td><td>91.7%</td></tr>
+<tr><td>挑球 lift</td><td>27.0</td><td>0.183</td><td>0.225</td><td class="good">93.5%</td></tr>
+</table></div>
+<p class="note">Calibration is not the limiting term. At the endpoint the depth ambiguity vanishes (the shuttle is on a known plane), so calibration becomes the leading camera-side error — and it still inflates the endpoint error by only 3–7%. In pixel-equivalent terms the reconstruction error (23.6&nbsp;px median) is fourteen times the calibration residual (1.7&nbsp;px).</p>
+
+<h2 id="monotrack">7. Comparison with MonoTrack-style physics fitting</h2>
+<p>MonoTrack reconstructs each shot by fitting launch position, velocity and a per-shot drag coefficient under forward-Euler quadratic drag, minimising an L<sub>6</sub> reprojection loss with SLSQP. We re-implemented that step from its public code and ran it on the same 2D tracks and the same calibrated cameras as the lifter — the comparison the paper needs is the 3D-from-2D step on identical input. Deviations from the original (no hit detector, so each annotated stroke is one shot; the receiving-player drift term is dropped) are documented in the baseline's source.</p>
+<!-- MONOTRACK_RESULTS -->
+<p class="note" id="mt-pending">Results pending — the comparison is running.</p>
+
+<h2 id="viewer-section">8. Interactive 3D model</h2>
+<p>The calibrated court, net, broadcast camera frustum and forty reconstructed trajectories, exported from Blender. Drag to orbit, scroll to zoom.</p>
+<div class="viewer" id="viewer"><div class="hud" id="hud">loading model…</div></div>
+<div class="legend">
+  <span style="--c:#e8552f">attack (smash, net kill, rush)</span>
+  <span style="--c:#d9a32e">flat (drop, drive, push)</span>
+  <span style="--c:#3b82c4">lift / clear</span>
+  <span style="--c:#2fa98c">net play</span>
+  <span style="--c:#f2bf33">broadcast camera</span>
+</div>
+
+<h2 id="limits">9. Limitations</h2>
+<p>Real-footage validation rests on proxies: net clearance and annotated court positions at stroke ends. Rally-final floor landings — the one true 3D anchor — were unusable because the tracker loses the shuttle as it lands (0 of 10 candidates with ≥5 detections); tracking more of the 1,936 available rallies is the direct fix. Tracker coverage limited the real set to 177 of 9,875 candidate strokes. The self-calibration residual sits at 1.65&nbsp;px, decomposed as 1.06&nbsp;px of court-detection inconsistency plus 0.61&nbsp;px from reconciling the net; lens distortion, line placement and camera drift were each tested and ruled out (lines straight to 0.12&nbsp;px, drift 0.04&nbsp;px, line offsets 1.2&nbsp;mm median). The net tape sits a measured 15&nbsp;mm below the nominal cord height, consistently across venues.</p>
+
+<h2 id="cite">BibTeX</h2>
+<pre>@misc{chang2026shuttle3d,
+  title  = {Observability Limits of Monocular Shuttlecock 3D Reconstruction from Broadcast Badminton Video},
+  author = {Chang, Gino},
+  year   = {2026},
+  note   = {Project page}
+}</pre>
+
+<p class="foot">Court and net geometry follow BWF specifications (6.10 × 13.40 m doubles court; net 1.55 m at the posts, 1.524 m at centre). Shuttle flight model: quadratic drag with 6.8 m/s terminal velocity, RK4. Tracking: TrackNetV3. Rendering: Blender 4.2. All numbers on this page come from the experiment logs of this project.</p>
+
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const wrap = document.getElementById('viewer'), hud = document.getElementById('hud');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+wrap.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b1417);
+const cam = new THREE.PerspectiveCamera(36, 16 / 9, 0.05, 1000);
+const ctl = new OrbitControls(cam, renderer.domElement);
+ctl.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xe6f0ee, 0x1a2a2c, 1.5));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+scene.add(sun);
+
+function resize() {
+  // force the 16:9 box explicitly: the canvas's intrinsic size otherwise fights
+  // the CSS aspect-ratio in narrow panes and the viewer turns tall and narrow
+  const w = wrap.clientWidth, h = Math.round(w * 9 / 16);
+  wrap.style.height = h + 'px';
+  renderer.setSize(w, h, true);
+  cam.aspect = w / h; cam.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// glTF is Y-up (Blender's exporter converts Z-up on export). Frame the COURT
+// only: the broadcast camera sits ~30 m away and would drag the bounding-box
+// centre off the court if it were included.
+function frame(obj) {
+  const box = new THREE.Box3();
+  obj.traverse(o => { if (o.isMesh && !/camera_body|frustum/.test(o.name)) box.expandByObject(o); });
+  const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+  cam.up.set(0, 1, 0);
+  const r = Math.max(size.x, size.y, size.z);
+  // raised three-quarter view; r is the court's long axis (13.4 m), so ~1.9 r
+  // keeps the whole court and the 8 m arcs inside a 16:9 frame
+  cam.position.set(c.x + r * 1.25, c.y + r * 0.95, c.z + r * 1.15);
+  ctl.target.copy(c);
+  sun.position.set(c.x + 8, c.y + 14, c.z + 6);
+  ctl.minDistance = r * 0.2; ctl.maxDistance = r * 5;
+  ctl.update();
+}
+
+new GLTFLoader().load('assets/court_scene.glb', g => {
+  scene.add(g.scene);
+  frame(g.scene);
+  let n = 0; g.scene.traverse(o => { if (o.isMesh) n++; });
+  hud.textContent = n + ' meshes · drag to orbit · scroll to zoom';
+}, undefined, () => { hud.textContent = 'could not load assets/court_scene.glb'; });
+
+(function loop() { requestAnimationFrame(loop); ctl.update(); renderer.render(scene, cam); })();
+</script>
+</body>
+</html>
