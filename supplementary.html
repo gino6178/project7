@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimTrack3D — supplementary</title>
+<meta name="description" content="SimTrack3D: monocular 3D trajectory prediction for fast-moving shuttlecocks. Cameras measured from real broadcasts, 77,728 aerodynamically solved strokes anchored to real annotations, the Shuttle3D ray-depth lifter, and an observability number that says when the learned prior is doing the work.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ink:#141b1e; --muted:#5c6b70; --line:#dfe6e5; --ground:#fbfcfc; --surface:#ffffff;
+  --acc:#0e7c7b; --acc2:#e8552f; --soft:#e9f3f2;
+  --serif:"Source Serif 4",Georgia,serif; --sans:"Source Sans 3","Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--ground)}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6}
+.page{max-width:920px;margin:0 auto;padding:48px 24px 96px}
+header{text-align:center;margin-bottom:36px}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,4.2vw,40px);line-height:1.2;margin:0 0 14px;text-wrap:balance}
+.authors{font-size:17px;margin:0 0 4px}
+.affil{color:var(--muted);font-size:15px;margin:0 0 18px}
+.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.links a{font-family:var(--mono);font-size:13px;padding:7px 14px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;background:var(--surface)}
+.links a:hover{border-color:var(--acc);color:var(--acc)}
+.teaser{margin:28px 0 8px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.teaser img{display:block;width:100%}
+figure{margin:28px 0}
+figure img{display:block;width:100%;border:1px solid var(--line);border-radius:4px;background:#fff}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+figcaption b{color:var(--ink)}
+h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:52px 0 12px;padding-top:14px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:600;margin:26px 0 8px;color:var(--ink)}
+p{margin:0 0 14px}
+.abstract{font-size:16.5px;background:var(--soft);padding:20px 24px;border-radius:6px;border-left:3px solid var(--acc)}
+.contrib{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px}
+.contrib li{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:4px;padding:14px 18px;font-size:16px}
+.contrib b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:3px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:18px 0}
+.kv div{background:var(--surface);padding:12px 14px}
+.kv b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;color:var(--acc)}
+.kv span{font-size:13px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:12px 0 6px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.02em;border-bottom:2px solid var(--line)}
+td.bad{color:var(--acc2);font-weight:600}
+td.good{color:var(--acc);font-weight:600}
+.tw{overflow-x:auto}
+/* numbered citations and the reference list */
+sup.cite{font-size:11.5px;line-height:0;vertical-align:super;white-space:nowrap;margin-left:1px}
+sup.cite a{color:var(--acc);text-decoration:none;border:0}
+sup.cite a:hover{text-decoration:underline}
+.badcite{color:#b4472e;font-weight:600}
+ol.refs{font-size:14px;line-height:1.55;color:var(--ink);padding-left:2.4em;margin:14px 0}
+ol.refs li{margin:0 0 7px 0}
+ol.refs li:target{background:#fff6d8;border-radius:3px}
+ol.refs i{color:var(--ink)}
+ol.refs a{color:var(--muted);font-size:12.5px;word-break:break-all}
+.note{font-size:14.5px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:14px 0}
+code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:3px}
+.viewer{position:relative;width:100%;aspect-ratio:16/9;background:#0b1417;border-radius:6px;overflow:hidden;border:1px solid #223038;cursor:grab}
+.viewer canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+.viewer .hud{position:absolute;left:12px;top:10px;font-family:var(--mono);font-size:12px;color:#8fb6af;pointer-events:none}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13.5px;color:var(--muted);margin-top:10px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
+pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 16px;border-radius:6px;overflow-x:auto}
+h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
+.draft{background:#fdf3ee;border:1px solid #f0c9b6;border-left:3px solid var(--acc2);border-radius:6px;padding:16px 20px;margin:22px 0;font-size:15.5px}
+.draft b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:4px;color:var(--ink)}
+.tbd{color:var(--acc2);font-style:italic;font-weight:600;font-size:.92em}
+.eq{margin:16px 0;overflow-x:auto}
+.links a.on{border-color:var(--acc);color:var(--acc);background:var(--soft)}
+.foot{color:var(--muted);font-size:13.5px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>SimTrack3D &mdash; supplementary material</h1>
+  <p class="authors">Gino Chang</p>
+  <p class="affil">Supplementary material &middot; Paper 1 of 2 &middot; 2026</p>
+  <div class="links">
+    <a href="./">&larr; back to SimTrack3D</a><a href="tracknet3d/">TrackNet3D (paper 2) →</a><a href="#demo">Demo</a><a href="#related">Related work</a><a href="#method">Method</a><a href="#theory">Observability</a><a href="#exp">Experiments</a><a href="#viewer-section">3D viewer</a>
+  </div>
+</header>
+
+
+
+
+<h2 id="supp">Supplementary material</h2>
+<p>These four analyses did not fit the eight-page submission. None of them is
+needed to follow the main results; each answers a question a careful reader is
+entitled to ask. Numbering and the bibliography are shared with the
+<a href="index.html">main page</a>.</p>
+<ul class="contrib">
+  <li>S1. Closing the loop: self-training on the estimator’s own output</li>
+  <li>S2. Synthetic benchmark: absolute accuracy by stroke type</li>
+  <li>S3. Venues the model has never seen through any camera</li>
+  <li>S4. Robustness to tracker noise and dropout</li>
+</ul>
+
+<h3>S1. Closing the loop: self-training on the estimator’s own output</h3>
+<p class="note"><b>Everything reported in &sect;5 comes from a model trained on synthetic flights alone.</b> This section describes what happens if that rule is relaxed and the estimator's own repaired output is fed back as supervision. It is reported because it works, and separated because a sim-to-real claim that needs real labels to hold is not a sim-to-real claim.</p>
+<p>The estimator of &sect;3.4 runs at test time and returns a possible flight for every stroke. That is useful in itself, but it also produces something the training pipeline never had: a 3D label for real footage. The label is not ground truth &mdash; it is the network's own proposal moved onto the feasible set &mdash; yet it differs from the proposal in exactly the way physics says it must, and it is available on every rally we can track.</p>
+<p>Training on one's own predictions is self-training, and its failure mode is well known: a confident mistake becomes a confident label, and the error is reinforced rather than corrected. That risk is acute here, because &sect;4 shows the network is most assertive precisely where the image is least informative. Two things make the loop safe enough to be worth closing.</p>
+<p>The first is that <em>the corrector is independent of the model's confidence</em>. The court's rules are not learned, not tuned, and not correlated with anything the network believes; a reconstruction that passes below the cord is wrong no matter how certain the network was. Projection therefore removes an entire class of error that self-training on raw predictions would preserve.</p>
+<p>The second is that <em>the projection reports its own reliability</em>. Two numbers fall out of the solve at no extra cost and need no ground truth: the reprojection residual of the fitted flight, and the price of feasibility, the extra residual the projection had to accept. A stroke whose flight explains its pixels and needed no help is a stroke worth learning from; a stroke that the physics could only satisfy by abandoning the image is not. We keep strokes below the median residual and discard the rest.</p>
+<p>The fine-tuning itself is deliberately plain, so that any gain is attributable to the labels and not to the recipe: the same architecture and loss, initialised from the synthetic model, with each batch drawn one quarter from the accepted real pseudo-labels and three quarters from synthetic data so the prior is refreshed rather than overwritten.</p>
+<p><b>The evaluation is the point.</b> Measuring the fine-tuned model with the constrained solve still attached would be circular, since the solve enforces the property we are testing for. We therefore measure the <em>raw</em> network, with no solve at test time, on venues held out in their entirety &mdash; every rally from those matches excluded from the pseudo-label set, so the model has never seen that camera's depth prior. The question is whether the fraction of physically impossible reconstructions falls. If it does, physics has moved from a post-hoc correction into the prior itself, which is the difference between a filter and a model that has learned the game.</p>
+<p>It does fall, by about a third (&sect;5.7): on two venues held out entirely, the raw network's impossible fraction goes from 27.4% to 17.6% after twelve epochs on 2,588 accepted pseudo-labels, at a cost of 0.006&nbsp;m on the synthetic benchmark. Physics can be distilled into the prior; it cannot yet replace the safety net.</p>
+
+
+<h3>S2. Synthetic benchmark: absolute accuracy by stroke type</h3>
+<p><b>Claim.</b> A ray-depth lifter trained only on anchored synthetic flights recovers metric 3D on held-out strokes, and its error is governed by how much the image can say about each stroke.</p>
+<p>Held-out strokes are partitioned by real anchor, so no replayed flight appears on both sides. Badminton is tactically stratified, and so is the error: the table lists every type with at least thirty held-out strokes, ordered by observability.</p>
+<div class="tw"><table>
+<tr><th>stroke type</th><th>strokes</th><th><i>N</i></th><th>CRLB (m)</th><th>Shuttle3D (m)</th><th>model / CRLB</th></tr>
+<tr><td>&#25361;&#29699; lift</td><td>2,325</td><td>27.0</td><td>0.183</td><td>0.271</td><td>1.48</td></tr>
+<tr><td>&#38263;&#29699; clear</td><td>894</td><td>23.0</td><td>0.160</td><td>0.289</td><td>1.81</td></tr>
+<tr><td>&#21246;&#29699; cross net</td><td>200</td><td>15.3</td><td>0.287</td><td>0.438</td><td>1.53</td></tr>
+<tr><td>&#38450;&#23432;&#22238;&#25361; defensive lift</td><td>144</td><td>14.9</td><td>0.303</td><td>0.819</td><td>2.70</td></tr>
+<tr><td>&#36942;&#24230;&#20999;&#29699; over-cut drop</td><td>78</td><td>11.1</td><td>0.424</td><td>0.444</td><td>1.05</td></tr>
+<tr><td>&#25512;&#29699; push</td><td>311</td><td>9.9</td><td>0.497</td><td>0.400</td><td class="bad">0.80</td></tr>
+<tr><td>&#25918;&#23567;&#29699; net shot</td><td>2,665</td><td>9.8</td><td>0.619</td><td>0.398</td><td class="bad">0.64</td></tr>
+<tr><td>&#20999;&#29699; drop</td><td>948</td><td>8.9</td><td>0.458</td><td>0.390</td><td class="bad">0.85</td></tr>
+<tr><td>&#25803;&#23567;&#29699; block</td><td>1,518</td><td>8.6</td><td>0.583</td><td>0.542</td><td class="bad">0.93</td></tr>
+<tr><td>&#38450;&#23432;&#22238;&#25277; defensive drive</td><td>149</td><td>6.3</td><td>0.723</td><td>0.787</td><td>1.09</td></tr>
+<tr><td>&#40670;&#25187; tap smash</td><td>390</td><td>4.2</td><td>1.440</td><td>0.400</td><td class="bad">0.28</td></tr>
+<tr><td>&#24460;&#22580;&#25277;&#24179;&#29699; rear drive</td><td>228</td><td>4.0</td><td>1.059</td><td>0.645</td><td class="bad">0.61</td></tr>
+<tr><td>&#27578;&#29699; smash</td><td>1,381</td><td>3.7</td><td>1.232</td><td>0.344</td><td class="bad">0.28</td></tr>
+<tr><td>&#25778;&#29699; rush</td><td>176</td><td>3.2</td><td>1.886</td><td>1.147</td><td class="bad">0.61</td></tr>
+<tr><td>&#24179;&#29699; drive</td><td>240</td><td>2.3</td><td>2.539</td><td>0.556</td><td class="bad">0.22</td></tr>
+<tr><td><b>all held-out strokes</b></td><td>11,653</td><td>&mdash;</td><td>&mdash;</td><td><b>0.387</b> per stroke / 0.329 per frame</td><td>&mdash;</td></tr>
+</table></div>
+<p><b>Through cameras the model never saw.</b> The model is trained on 51,672 strokes rendered through the 25 training cameras and tested on 11,653 held-out strokes, 2,525 of them through the 7 held-out cameras. Its per-frame median is <b>0.325&nbsp;m</b> through cameras it never saw, against 0.330&nbsp;m through the cameras it trained on. Per stroke type through unseen cameras the ordering is unchanged (per-stroke medians): lift 0.271, clear 0.273, smash 0.352, net shot 0.392, drop 0.417, block 0.533&nbsp;m. The camera is not what the network learns.</p>
+<p>Baselines on the same held-out set: assuming the shuttle is on the floor gives 11.8&nbsp;m, a constant depth to the court centre gives 1.99&nbsp;m. The stress sweep of &sect;5.8 shows this figure degrades gracefully with detection noise and dropout rather than collapsing.</p>
+<p><b>Conclusion.</b> The claim holds, with a qualification the next sections build on. For lifts and clears the model sits just above the Cram&eacute;r&ndash;Rao bound, as an honest estimator must. For every fast or short stroke it sits <em>below</em> the bound, by up to 4.6&times; on drives. An unbiased estimator cannot do that; the network is answering those strokes from the distribution of real play it was trained on, not from the image. &sect;4 and &sect;6.1 take that up.</p>
+
+
+<h3>S3. Venues the model has never seen through any camera</h3>
+<p><b>Claim.</b> A model that never saw a venue's camera lifts through it as well as through the cameras it was trained on.</p>
+<p>The twenty-two TrackNetV3 venues are the test: they are calibrated from broadcast alone (&sect;3.1), five of them are held out of training entirely, and their per-frame 2D truth removes the tracker from the comparison. On their 2,592 interior strokes the raw network's reconstructions are physically impossible for <b>17.9%</b> (cord 9.5%, no side change 6.9%, floor 2.2%, hall 0.0%), against 11.6% on the ShuttleSet corpus (&sect;5.5). Per venue the rate runs from 9.6% to 30.1%, and correlates only weakly with camera height (&minus;0.31) or distance (&minus;0.22), so venue difficulty rather than camera geometry sets the spread. The two corpora are not directly comparable &mdash; these venues are calibrated from broadcast alone and their strokes are segmented by a different pipeline &mdash; so the number to read here is the split by camera below, not the gap between corpora. The constrained solve pays a median price of 0.00&nbsp;px on these venues (p90 23&nbsp;px), and returns possible flights for all of them.</p>
+<p>The split by camera is what matters, and it has almost closed. Of the 22 venues, five were held out of training entirely (&sect;5.1); on those the impossible fraction is <b>18.4%</b>, against <b>17.8%</b> on the 17 whose cameras rendered training data &mdash; a gap of six tenths of a point. Seeing a venue&#39;s camera in training is worth almost nothing, which is the claim this section exists to test. Per venue the range is 9.6% to 24.5%, and the two extremes are both training-camera venues, so venue difficulty rather than camera novelty sets the spread. On the 150 strokes solved with the rectifier the price of feasibility is 0 px at the median and 20.3&nbsp;px at the 90th percentile.</p>
+<p>One control belongs here. The model trained on <em>random</em> launch states (&sect;5.9) breaks a rule on 24.8% of these strokes while being 1.8&times; less accurate on held-out synthetic ones, so on these venues the more accurate model is also the more legal one. That is not something a rule count can be relied on to show. Plausibility and accuracy are separate axes, and the evidence for that does not come from this control: the cord test is decided by a 1% depth error (&sect;5.6), and on the rally-final strokes where the true 3D landing is known, adding the floor constraint drives the landing height error to zero while <em>increasing</em> the horizontal error.</p>
+<p><b>Closing the loop (&sect;3.5).</b> The constrained solve labelled 6,878 real ShuttleSet strokes from eight venues; two venues (1,702 strokes) were held out entirely, and of the 5,176 trainable strokes the residual gate kept the 2,588 below the median. Fine-tuning the 25-camera model for twelve epochs on batches drawn one quarter from these labels and three quarters from synthetic data, and then scoring the <i>raw</i> network with no solve at test time, the fraction of physically impossible reconstructions falls from 14.2% to 6.1% on the trained venues and from <b>27.4% to 17.6%</b> on the two it never saw, while held-out synthetic error moves from 0.267 to 0.273&nbsp;m. A third of the real-footage failures were learnable from the court's rules alone, without a single 3D label; the remaining two thirds are what the second tier is for.</p>
+<div class="tw"><table>
+<tr><th>camera group (synthetic, held-out strokes)</th><th>venues</th><th>height / distance</th><th>strokes</th><th>3D error, median (m)</th><th>height error (m)</th></tr>
+<tr><td>low and near</td><td>16</td><td>4.0&ndash;7.0&nbsp;m / 16.8&ndash;30.9&nbsp;m</td><td>5,850</td><td>0.283</td><td>0.063</td></tr>
+<tr><td>mid</td><td>11</td><td>7.0&ndash;9.8&nbsp;m / 20.9&ndash;37.9&nbsp;m</td><td>4,015</td><td>0.277</td><td>0.088</td></tr>
+<tr><td>high and far</td><td>5</td><td>10.6&ndash;15.2&nbsp;m / 30.5&ndash;42.7&nbsp;m</td><td>1,788</td><td>0.287</td><td>0.127</td></tr>
+</table></div>
+<p><b>Conclusion.</b> The claim holds on both sides of the sim-to-real boundary. On synthetic data accuracy is flat across camera geometry (a 0.010&nbsp;m spread, an order of magnitude below the error; only the height component grows with camera height, 0.063 to 0.127&nbsp;m), and on real footage unseen venues are indistinguishable from seen ones (18.4% vs 17.8% impossible on the TrackNetV3 venues, 71.8% vs 72.9% possible on the held-out ShuttleSet venues). The camera is not what the network learned.</p>
+
+
+<h3>S4. Robustness to tracker noise and dropout</h3>
+<p><b>Claim.</b> The model degrades gracefully with the two failures real trackers actually have.</p>
+<p>Training injects &sigma;&nbsp;=&nbsp;2&nbsp;px detection noise and 5% random dropout. A sweep over noise level and the number of <em>consecutively</em> dropped frames measures the margin. Each cell is 1,908&ndash;2,000 held-out strokes; the figure is the median per-stroke 3D error in metres.</p>
+<div class="tw"><table>
+<tr><th>tracker noise</th><th>0 dropped</th><th>2 dropped</th><th>4 dropped</th><th>6 dropped</th><th>8 dropped</th></tr>
+<tr><td>&sigma; = 1 px</td><td class="good">0.302</td><td>0.322</td><td>0.354</td><td>0.404</td><td>0.483</td></tr>
+<tr><td>&sigma; = 2 px (training condition)</td><td>0.311</td><td>0.333</td><td>0.365</td><td>0.431</td><td>0.487</td></tr>
+<tr><td>&sigma; = 3 px</td><td>0.335</td><td>0.344</td><td>0.379</td><td>0.442</td><td>0.490</td></tr>
+<tr><td>&sigma; = 4 px</td><td>0.353</td><td>0.371</td><td>0.400</td><td>0.456</td><td>0.527</td></tr>
+<tr><td>&sigma; = 5 px</td><td>0.374</td><td>0.391</td><td>0.425</td><td>0.467</td><td>0.542</td></tr>
+</table></div>
+<p><b>Conclusion.</b> Quintupling detection noise costs 25%; dropping eight consecutive frames costs 45&ndash;60% depending on the noise level, and the two effects are close to separable. Real trackers fail by <em>losing the shuttle</em>, not by jittering (9&ndash;92% detection per venue on our footage), so it is the length of the gap, not the precision of the hits, that governs what can be recovered.</p>
+
+
+<p class="note" style="margin-top:28px">These sections cite no additional work; the bibliography is on the <a href="index.html">main page</a>.</p>
+</div>
+</body>
+</html>
