@@ -101,6 +101,7 @@ entitled to ask. Numbering and the bibliography are shared with the
   <li>S2. Synthetic benchmark: absolute accuracy by stroke type</li>
   <li>S3. Venues the model has never seen through any camera</li>
   <li>S4. Robustness to tracker noise and dropout</li>
+  <li>S5. Real tournament footage: the guarantee, and what the repair costs</li>
 </ul>
 
 <h3>S1. Closing the loop: self-training on the estimator’s own output</h3>
@@ -169,6 +170,27 @@ entitled to ask. Numbering and the bibliography are shared with the
 </table></div>
 <p><b>Conclusion.</b> Quintupling detection noise costs 25%; dropping eight consecutive frames costs 45&ndash;60% depending on the noise level, and the two effects are close to separable. Real trackers fail by <em>losing the shuttle</em>, not by jittering (9&ndash;92% detection per venue on our footage), so it is the length of the gap, not the precision of the hits, that governs what can be recovered.</p>
 
+
+<h3>S5. Real tournament footage: the guarantee, and what the repair costs</h3>
+<p><b>Claim.</b> A model trained on synthetic flights alone, with no real 3D label and no fine-tuning on real video, produces flights that a badminton court permits, and the repair that guarantees this is cheap enough to be invisible.</p>
+<p>The estimator runs on 6,553 real strokes from ten venues, through the cameras measured in &sect;3.1, with the anchors of &sect;3.5 as tokens to the network and the court's rules in the rectifier. Nothing here was trained on real data.</p>
+<div class="tbl"><table>
+<tr><th>stage (real footage, 6,553 strokes)</th><th>share of strokes</th><th>physically possible</th><th>launch error (m)</th><th>arrival error (m)</th><th>repair cost (px)</th></tr>
+<tr><td>MonoTrack-style per-stroke fit</td><td>&mdash;</td><td class="bad">18.3%</td><td class="bad">2.81</td><td class="bad">3.33</td><td>&mdash;</td></tr>
+<tr><td>Shuttle3D, one launch state fitted to its depths</td><td>67.1%</td><td>already possible</td><td></td><td></td><td>0</td></tr>
+<tr><td>&hellip; the rectifier moves it into the feasible set</td><td>28.9%</td><td>possible</td><td></td><td></td><td>0 median, 0.76 p90</td></tr>
+<tr><td>&hellip; no legal flight within the budget</td><td>4.0%</td><td class="bad">flagged, nothing returned</td><td></td><td></td><td>&mdash;</td></tr>
+<tr><td><b>Shuttle3D + one-step rectifier</b></td><td>100%</td><td class="good"><b>96.1%</b></td><td class="good"><b>0.91</b></td><td class="good"><b>0.59</b></td><td>0 median</td></tr>
+</table></div>
+<p>Two thirds of the strokes need no repair at all: the launch state that best explains the network's depths already breaks no rule. The rectifier moves another 28.9% into the feasible set, and it does so almost for free &mdash; the median repaired stroke gives up no measurable reprojection accuracy, and the 90th percentile gives up 0.76&nbsp;px, well inside the tracker's own noise. For the remaining 4.0% no legal flight is found and none is returned: the stroke is flagged. Forcing one would trade an honest gap for a plausible-looking wrong answer, and it would break the property that makes the output usable &mdash; that every trajectory in it is one the game allows.</p>
+<p><b>What the sim-to-real work bought.</b> The same architecture trained without the tracker-noise model of &sect;3.3 &mdash; clean 2&nbsp;px Gaussian noise and random dropout, the standard synthetic recipe &mdash; is worse on real video by every measure that matters, although it scores <em>better</em> on the clean synthetic benchmark (0.244 against 0.271&nbsp;m). Modelling the real tracker's failures is worth 19% of the arrival error.</p>
+<div class="tbl"><table>
+<tr><th>trained with</th><th>possible after repair</th><th>launch error (m)</th><th>arrival error (m)</th><th>repair cost, p90 (px)</th></tr>
+<tr><td>clean synthetic noise (&sigma; = 2 px, 5% dropout)</td><td>95.8%</td><td>1.04</td><td>0.73</td><td>1.36</td></tr>
+<tr><td><b>measured tracker noise, late pick-up, truncation, calibration jitter</b></td><td class="good"><b>96.1%</b></td><td class="good"><b>0.91</b></td><td class="good"><b>0.59</b></td><td class="good"><b>0.76</b></td></tr>
+</table></div>
+<p>Endpoint error deserves its own qualification. The reference is the hitting player's annotated ground position, itself a median 0.75&nbsp;m from the racket, so a 0.6&nbsp;m arrival error is close to the floor this reference can resolve; the improvement from 0.73 to 0.59&nbsp;m is therefore larger in relative terms than it looks. On the 530 rally-final strokes the landing spot read from the stationary shuttle gives a second, independent check, and it is the hardest case in the corpus: those strokes are the fastest and shortest, and no receiver stands at their end.</p>
+<p><b>Conclusion.</b> Feasibility is not accuracy, and the two are reported separately for that reason. What the guarantee provides is that every returned flight is one the game allows, obtained in 31&nbsp;ms per stroke, from a model that has never seen a real 3D label.</p>
 
 <p class="note" style="margin-top:28px">These sections cite no additional work; the bibliography is on the <a href="index.html">main page</a>.</p>
 </div>
