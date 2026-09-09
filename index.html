@@ -82,9 +82,9 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <header>
   <h1>SimTrack3D: Monocular 3D Trajectory Prediction of Fast-Moving Shuttlecocks via Broadcast-Calibrated Sim-to-Real Transfer</h1>
   <p class="authors">Gino Chang</p>
-  <p class="affil">Paper 1 of 2 &middot; Project page &middot; 2026</p>
+  <p class="affil">Project page &middot; 2026</p>
   <div class="links">
-    <a class="on" href="./">SimTrack3D</a><a href="tracknet3d/">TrackNet3D (paper 2) →</a><a href="#demo">Demo</a><a href="#related">Related work</a><a href="#method">Method</a><a href="#theory">Observability</a><a href="#exp">Experiments</a><a href="#viewer-section">3D viewer</a>
+    <a class="on" href="./">SimTrack3D</a><a href="#demo">Demo</a><a href="#related">Related work</a><a href="#method">Method</a><a href="#theory">Observability</a><a href="#exp">Experiments</a><a href="#viewer-section">3D viewer</a>
   </div>
 </header>
 <div class="teaser"><img src="assets/hero.png" alt="Reconstructed shuttle trajectories over a calibrated court"></div>
@@ -353,7 +353,6 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <h2 id="conclusion">7. Conclusion</h2>
 <p>We presented SimTrack3D, a principled framework for monocular 3D trajectory reconstruction of fast-moving sports projectiles from broadcast video. By resolving focal-length degeneracy via sag-gated net-cord calibration, synthesizing domain-faithful trajectories via aerodynamic BVP formulation, and enforcing physical rules along unobservable null-space directions, SimTrack3D achieves 96.0% physically valid reconstructions on real tournament matches. Furthermore, our observability theory formalizes the boundary where sensory data ends and domain priors take over, establishing a rigorous foundation for single-camera 3D trajectory estimation.</p>
-<p>What follows is <a href="tracknet3d/">paper 2</a>, which asks whether the same pipeline's output can train a model that needs no calibration at all.</p>
 
 <h2 id="viewer-section">Interactive 3D model</h2>
 <p>The calibrated court, net, broadcast camera frustum and forty reconstructed trajectories, exported from Blender. Drag to orbit, scroll to zoom.</p>
