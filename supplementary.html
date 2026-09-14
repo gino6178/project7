@@ -103,7 +103,6 @@ entitled to ask. Numbering and the bibliography are shared with the
   <li>S4. Robustness to tracker noise and dropout</li>
   <li>S5. Real tournament footage: the guarantee, and what the repair costs</li>
   <li>S6. Extended related work</li>
-  <li>S7. A registered renderer, and what it measured about our own labels</li>
 </ul>
 
 <h3>S1. Closing the loop: self-training on the estimator’s own output</h3>
@@ -193,130 +192,6 @@ entitled to ask. Numbering and the bibliography are shared with the
 </table></div>
 <p>Endpoint error deserves its own qualification. The reference is the hitting player's annotated ground position, itself a median 0.75&nbsp;m from the racket, so a 0.6&nbsp;m arrival error is close to the floor this reference can resolve; the improvement from 0.73 to 0.59&nbsp;m is therefore larger in relative terms than it looks. On the 530 rally-final strokes the landing spot read from the stationary shuttle gives a second, independent check, and it is the hardest case in the corpus: those strokes are the fastest and shortest, and no receiver stands at their end.</p>
 <p><b>Conclusion.</b> Feasibility is not accuracy, and the two are reported separately for that reason. What the guarantee provides is that every returned flight is one the game allows, obtained in 31&nbsp;ms per stroke, from a model that has never seen a real 3D label.</p>
-
-<h3>S7. A registered renderer, and what it measured about our own labels</h3>
-
-<p><b>Claim.</b> The synthetic domain of &sect;3.2 is trajectories, not images. This section reports the
-image-level extension: a Blender scene driven by a measured broadcast camera, players fitted from the
-broadcast's own 2D skeletons rather than stock motion capture, and motion blur at the shutter regressed
-from each clip. It registers to real footage at <b>2.2&nbsp;px</b> on the court lines and
-<b>3.8&nbsp;px</b> on the players. Building it also produced an unplanned measurement of where this
-paper's own 3D output is least reliable, reported at the end.</p>
-
-<figure>
-<video src="assets/sim_twin_vs_real.mp4" controls loop muted playsinline style="width:100%;border:1px solid var(--line);border-radius:4px"></video>
-<figcaption><b>Left: real broadcast. Right: the digital twin of the same 91 frames.</b> One rally
-segment, Estonian International 2025. Same camera, both players fitted per frame, shuttle on this
-paper's reconstructed trajectory. Frames 200&ndash;226 carry no shuttle annotation; the gap is filled by
-solving a flight between the previous stroke's landing point and the next stroke's launch point, and
-those frames are marked as reconstruction in the overlay.</figcaption>
-</figure>
-
-<p><b>The projection matrices are not physical cameras.</b> The per-venue matrices of &sect;3.1 are
-pixel-exact on the court and cannot be handed to a renderer: their decomposition returns
-f<sub>x</sub>,&nbsp;f<sub>y</sub>&nbsp;&lt;&nbsp;0 with det&nbsp;R&nbsp;=&nbsp;&minus;1. Projection is
-insensitive to that mirror, so nothing in the estimation pipeline is affected &mdash; a renderer
-handed one produces a black frame. The mirror is vertical in the image: flipping the "right" row of R
-gives a proper camera with identical u and v&nbsp;=&nbsp;2c<sub>y</sub>&nbsp;&minus;&nbsp;v<sub>proper</sub>,
-agreeing with the original matrix to <b>3.92&nbsp;px</b> over nine test points spanning the ground, the
-net-post tops, the players and the shuttle &mdash; inside the 6.03&nbsp;px residual the dataset
-homography already has against its own corner annotations. Render with a proper camera at principal
-point (c<sub>x</sub>, H&nbsp;&minus;&nbsp;c<sub>y</sub>), then flip the image vertically.</p>
-
-<div class="tbl"><table>
-<tr><th>registration of the twin to the real frame</th><th>value</th></tr>
-<tr><td>court lines, 1,440 samples on 12 lines</td><td class="good">2.2 px median (p90 6.0)</td></tr>
-<tr><td>near / far player, 91-frame sequence fit</td><td class="good">3.9 / 3.8 px median</td></tr>
-<tr><td>Blender camera against the dataset matrix</td><td>3.9 px worst of 9 points</td></tr>
-<tr><td>camera motion within a rally (phase correlation, 20 frames)</td><td>0.25 px median &mdash; a fixed camera is the right model</td></tr>
-<tr><td>shuttle streak, rendered vs real (53 labelled frames)</td><td class="bad">11.1 px vs 15.2 px major axis</td></tr>
-<tr><td>render cost</td><td>9 s/frame, Cycles on CPU, 1280&times;720, 48 samples</td></tr>
-</table></div>
-
-<p>The streak row is the one clear shortfall. Minor axis matches (6.1 against 5.4&nbsp;px), so the
-shuttle's size is right and only the exposure is short: the render uses the cross-clip median shutter
-of 1/116&nbsp;s while this clip is slower. Shutter is measured per clip elsewhere in the pipeline
-(median 1/150&nbsp;s, range 1/91 to 1/1708 across clips, an eight-fold spread) and is not yet wired
-into the renderer.</p>
-
-<p><b>Players are fitted from the broadcast, not animated.</b> No motion-capture corpus contains
-badminton. An SMPL-X body is optimised so that its joints project onto YOLO11m-pose keypoints through
-the venue's projection matrix, with three corrections that each mattered. Depth cannot come from
-apparent height &mdash; fixing the body to 1.72&nbsp;m pulls both players ~0.8&nbsp;m toward the camera,
-so the ankles are anchored by back-projecting their pixels onto the court plane, which is exact, and
-the fitted ankles then land 1&ndash;3&nbsp;cm from that anchor. The mirrored matrix flips the body's
-chirality, so left/right keypoint labels must be swapped before fitting; the independent check is the
-neck&rarr;nose direction against the net, which goes from pointing away to cos&nbsp;0.98&nbsp;/&nbsp;0.68
-toward it. And an L2 pull toward the T-pose makes a lunge cost prior energy, so the optimiser buys
-pixels with implausible joints: replacing the free 63-dimensional pose with the 32-dimensional VPoser
-latent, then refining the whole sequence jointly with acceleration penalties, costs 1.3&nbsp;px of
-reprojection (2.6&nbsp;&rarr;&nbsp;3.9) and returns poses that lie on the manifold a person can hold
-(maximum joint angle 111&deg;, joint angular speed p99 253&nbsp;&deg;/s).</p>
-
-<figure>
-<img src="assets/sim_twin_frames.png" alt="Six frames of the real clip beside the rendered twin">
-<figcaption><b>Six frames, real on the left, twin on the right.</b> The racket is one rigid body
-starting at the wrist: a 0.30&nbsp;m handle along the forearm with the head beyond it, its face normal
-set to the launch direction at contact and blended back over four frames.</figcaption>
-</figure>
-
-<p class="note"><b>Two convenient heuristics that measurement rejected.</b> "The higher wrist holds the
-racket" is not a handedness detector &mdash; per frame it flipped hands three and four times over 91
-frames, and two independent fits of the same clip voted right 83/91 and left 63/91; the racket hand is
-frequently the lower one, and it is now a sequence-level decision. And the first pose library, sampled
-from random 100-frame windows, contained exactly <b>one</b> overhead strike in 58 striking poses, which
-made synthetic smashes impossible. The two obvious explanations were both tested and both false: keypoint
-confidence at overhead contacts is the <em>highest</em> in the corpus (0.97 against 0.94) and the fitted
-wrist reprojects 5.5&nbsp;px from the detected one, so the fit follows the data; and sweeping the wrist-to-
-sight-line distance around each contact gives 1.20&nbsp;/&nbsp;0.86&nbsp;/&nbsp;<b>0.58</b>&nbsp;/&nbsp;1.00&nbsp;/&nbsp;1.44&nbsp;m
-at &minus;8&nbsp;/&nbsp;&minus;4&nbsp;/&nbsp;0&nbsp;/&nbsp;+4&nbsp;/&nbsp;+8 frames, a clean minimum exactly at contact,
-so the striker is identified correctly. The cause was sampling: random windows are mostly footwork.
-Selecting windows by the labelled stroke type &mdash; smash, clear, cut and push are struck above the
-head &mdash; changes the library without changing the fitter.</p>
-
-<div class="tbl"><table>
-<tr><th>pose library, 16 clips over 8 calibrated venues</th><th>random windows</th><th>selected by stroke type</th></tr>
-<tr><td>poses</td><td>3,158</td><td>3,144</td></tr>
-<tr><td>striking poses</td><td>58</td><td>66</td></tr>
-<tr><td><b>overhead-type strikes</b></td><td class="bad">1</td><td class="good">51</td></tr>
-<tr><td>highest reachable racket head</td><td>1.69 m</td><td class="good">2.24 m</td></tr>
-</table></div>
-
-<figure>
-<img src="assets/sim_rally_shots.png" alt="Four synthetic strokes populated from the pose library">
-<figcaption><b>One stroke of each class, populated from the library.</b> Launch point, landing point and
-duration come from the human annotations; only the height between them is solved, by the same
-boundary-value formulation as &sect;3.2. The striker is the observed striking pose whose racket head sits
-closest to the labelled launch height, yawed to the net and translated so the racket head is at the
-launch point with the feet on the floor. Residual racket-head offset is 0.26&ndash;0.30&nbsp;m for the
-overhead strokes and 0.01&nbsp;m for the lift; with the random-window library it was 0.8&nbsp;m. Across
-299 generated rallies (1,679 strokes) every stroke crosses above the tape, median clearance
-1.30&nbsp;m.</figcaption>
-</figure>
-
-<p><b>What the renderer measured about this paper's own output.</b> Placing a fitted human body and a
-reconstructed shuttle in the same metric frame is a comparison that was not previously available, and at
-contact frames the two disagree. Over 58 contacts in 8 venues, the distance from the striking wrist to
-the reconstructed 3D shuttle is <b>1.37&nbsp;m</b>, well beyond an arm plus a racket, while the distance
-from the same wrist to the <em>line of sight through the annotated pixel</em> is <b>0.58&nbsp;m</b>,
-which is about one racket. The annotated pixel therefore agrees with the fitted body and the
-reconstructed depth does not. Resolved along the sight-line, the depth is unbiased but scattered: a
-median 0.06&nbsp;m nearer than the wrist's closest approach, with an interquartile range of
-<b>&minus;0.93 to +1.34&nbsp;m</b>.</p>
-
-<p>This is consistent with the observability analysis of &sect;4 rather than a surprise: the contact frame
-is the seam between two solved flights, the point at which the arc being fitted ends and the next begins,
-and it is where the depth component is least constrained. The body is the trustworthy side of the
-comparison &mdash; its depth comes from ankles on the court plane, which the homography pins &mdash; and
-the comparison is independent, since nothing in the pose fitting sees a shuttle label. The practical
-consequence is that contact-frame depth should carry an explicit uncertainty rather than be reported like
-the rest of the trajectory, and that any downstream measurement taken at the moment of impact inherits a
-metre-scale depth scatter that is a property of the estimate, not of the shot.</p>
-
-<p><b>Not yet done.</b> The acceptance test for this line of work is to train or evaluate a detector on
-the rendered frames and measure the sim-to-real gap directly; that has not been run. Per-clip shutter is
-measured but not wired into the renderer, lighting is two fixed area lights rather than estimated from
-the real shadows, and the scene has one back wall, no crowd, and untextured bodies.</p>
 
 <h3>S6. Extended related work</h3>
 <p class="note">This section is organised by the problem each literature solves rather than by venue, because the difficulty here is that no single community owns it: the tracker comes from sports vision, the depth ambiguity from monocular geometry, the training data from the sim-to-real literature, the calibration from sports field registration, and the guarantee from constrained estimation.</p>
