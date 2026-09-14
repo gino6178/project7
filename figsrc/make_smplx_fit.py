@@ -1,99 +1,58 @@
-"""Schematic of the SMPL-X fit used to populate the scene (paper 1, section 3.6).
-
-FIGURE CONTRACT
----------------
-Core conclusion: the body is METRIC, not merely plausible, and three specific terms are what
-    make it so. The figure has to show what is optimised, what pins the depth, and what the
-    prior is -- because "we fit SMPL-X" is exactly the sentence a reviewer will not accept.
-Archetype: unknowns on the left, objective in the middle, the two measurements that pin the
-    solution on the right, with the failure each term prevents named under it.
-Review risk: readers assume apparent height sets the depth. The figure says, on the diagram,
-    that it does not and what happens if you let it (0.8 m toward the camera).
-Export: SVG (editable text) + PDF (Type 42) + PNG.
-"""
+"""SMPL-X fit (paper 1, §3.6) -- paper-figure style: unknowns -> objective terms -> what each pins, with the numbers.
+Export: SVG + PDF + PNG."""
 import matplotlib
 matplotlib.use('Agg')
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Circle
-
-INK, MUT, LINE = '#141b1e', '#5c6b70', '#dfe6e5'
-ACC, ACC2, SOFT, WARM = '#0e7c7b', '#e8552f', '#e9f3f2', '#fdf3ee'
-plt.rcParams.update({'font.family': 'DejaVu Sans', 'text.color': INK,
-                     'svg.fonttype': 'none', 'pdf.fonttype': 42})
-
-fig = plt.figure(figsize=(12.4, 5.6), dpi=200)
-fig.patch.set_facecolor('white')
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+INK, MUT, LINE = '#1a1a1a', '#6b6b6b', '#d9d9d9'; ACC, ACC2 = '#0e7c7b', '#e8552f'
+plt.rcParams.update({'font.family': 'DejaVu Sans', 'text.color': INK, 'svg.fonttype': 'none', 'pdf.fonttype': 42})
+fig = plt.figure(figsize=(14.0, 5.0), dpi=200); fig.patch.set_facecolor('white')
 AX = fig.add_axes([0, 0, 1, 1]); AX.set_xlim(0, 1); AX.set_ylim(0, 1); AX.axis('off')
-AX.text(0.035, 0.945, 'What makes the fitted body metric rather than merely plausible', fontsize=14.5, weight='bold')
-AX.text(0.035, 0.897, 'The unknowns are solved per frame against one broadcast skeleton, then the whole sequence is refined together.',
-        fontsize=9.2, color=MUT)
 
 
-def panel(x, y, w, h, title, kind='meas'):
-    face, edge = (SOFT, ACC) if kind == 'meas' else ((WARM, ACC2) if kind == 'built' else ('white', LINE))
-    AX.add_patch(FancyBboxPatch((x, y), w, h, boxstyle='round,pad=0.008,rounding_size=0.012',
-                                lw=1.5, ec=edge, fc=face, zorder=2))
-    AX.text(x + w / 2, y + h - 0.055, title, ha='center', fontsize=9.6, weight='bold', zorder=3)
+def blk(x, y, w, h, name, spec='', col=ACC, fs=8.0, lw=1.4, fill=True, top=False):
+    face = ({ACC: '#e6f2f1', ACC2: '#fdeee9', LINE: 'white'}[col]) if fill else 'white'
+    AX.add_patch(FancyBboxPatch((x, y), w, h, boxstyle='round,pad=0.003,rounding_size=0.008', lw=lw, ec=col, fc=face, zorder=2))
+    if top:      # tall boxes: title at the top, the list below it
+        AX.text(x + w / 2, y + h - 0.045, name, ha='center', va='center', fontsize=fs + 0.8, weight='bold', zorder=3)
+        AX.text(x + w / 2, y + (h - 0.09) / 2 + 0.01, spec, ha='center', va='center', fontsize=fs - 0.6, color=MUT, zorder=3, linespacing=1.4)
+        return
+    AX.text(x + w / 2, y + h / 2 + (0.024 if spec else 0), name, ha='center', va='center', fontsize=fs + 0.8, weight='bold', zorder=3)
+    if spec: AX.text(x + w / 2, y + h / 2 - 0.026, spec, ha='center', va='center', fontsize=fs - 0.6, color=MUT, zorder=3, linespacing=1.3)
 
 
-def lines(x, y, rows, fs=8.3, dy=0.042, col=MUT, ha='left'):
-    for i, r in enumerate(rows):
-        AX.text(x, y - i * dy, r, fontsize=fs, color=col, ha=ha, zorder=3)
+def arrow(x0, y0, x1, y1, col=INK, lw=1.3, ls='-', rad=0.0):
+    AX.add_patch(FancyArrowPatch((x0, y0), (x1, y1), arrowstyle='-|>', mutation_scale=10, lw=lw, color=col, linestyle=ls, connectionstyle='arc3,rad=%.2f' % rad, zorder=1))
 
 
-# ---------------- unknowns
-panel(0.030, 0.375, 0.200, 0.430, 'what is solved for', 'built')
-lines(0.048, 0.705, ['global orientation      3',
-                     'pose latent            32',
-                     'translation             3',
-                     'body shape             10', '',
-                     'per frame, warm-started', 'from the previous solution'])
-AX.text(0.130, 0.415, '48 numbers per body', ha='center', fontsize=8.6, color=ACC2, weight='bold')
+AX.text(0.03, 0.935, 'Body fit: what is solved, what each term pins', fontsize=14, weight='bold')
+AX.text(0.03, 0.875, 'Per frame against one broadcast skeleton, warm-started; then the whole sequence together.', fontsize=8.6, color=MUT)
 
-# ---------------- objective
-panel(0.270, 0.245, 0.290, 0.560, 'the objective')
-rows = [('reprojection of 17 joints', 'weighted Huber, through the', 'venue projection matrix', ACC),
-        ('ankle anchor', 'ankle pixels back-projected to', 'the court plane — pins the depth', ACC),
-        ('sole contact', 'lowest MESH vertex at z = 0,', 'not the ankle joint (7 cm off)', ACC),
-        ('pose prior', 'the pose IS a decoded latent,', 'so implausible poses are unreachable', ACC)]
-yy = 0.688
-for title, a, b, c in rows:
-    AX.text(0.288, yy, title, fontsize=8.8, color=INK, weight='bold', zorder=3)
-    AX.text(0.288, yy - 0.036, a, fontsize=8.0, color=MUT, zorder=3)
-    AX.text(0.288, yy - 0.070, b, fontsize=8.0, color=MUT, zorder=3)
-    yy -= 0.122
+# unknowns
+blk(0.030, 0.30, 0.140, 0.44, 'unknowns', 'orientation   3\nlatent pose  32\ntranslation   3\nshape        10\n\n48 per body', ACC2, fs=8.0, top=True)
+# objective terms, each with what it pins
+terms = [('reprojection', '17 joints, Huber\nthrough the venue P', 'the pose'),
+         ('ankle anchor', 'ankle px → court plane', 'the depth\n(else −0.8 m)'),
+         ('sole contact', 'lowest vertex at z = 0', 'the height\n(joint is 7 cm up)'),
+         ('pose prior', 'decoded VPoser latent', 'the manifold\n(no L2 to T-pose)')]
+for i, (n, sp, pin) in enumerate(terms):
+    x = 0.225 + i * 0.165
+    blk(x, 0.50, 0.140, 0.24, n, sp, ACC, fs=7.8)
+    AX.text(x + 0.070, 0.455, 'pins', ha='center', fontsize=6.8, color=MUT, style='italic')
+    AX.text(x + 0.070, 0.395, pin, ha='center', va='center', fontsize=7.6, color=ACC2, weight='bold', linespacing=1.3)
+    arrow(x + 0.070, 0.50, x + 0.070, 0.470, col=MUT, lw=0.9)
+arrow(0.170, 0.62, 0.225, 0.62)
+for i in range(3):
+    arrow(0.365 + i * 0.165, 0.62, 0.390 + i * 0.165, 0.62, col=LINE, lw=1.0)
+AX.text(0.555, 0.78, 'summed objective, Adam, 120 steps per frame', ha='center', fontsize=7.0, color=MUT, style='italic')
 
-# ---------------- what each term prevents
-panel(0.600, 0.245, 0.175, 0.560, 'what it prevents', 'built')
-prevent = ['fitting to noise in\nlow-confidence joints', 'depth from apparent height:\nboth players pulled\n0.8 m toward the camera',
-           'the body floating or\nsinking by 7 cm', 'lunges paid for with\nimplausible joint angles']
-yy = 0.700
-for i, t in enumerate(prevent):
-    AX.text(0.6875, yy, t, fontsize=8.0, color=ACC2, ha='center', va='top', zorder=3, linespacing=1.45)
-    yy -= 0.122
-for i in range(4):
-    AX.add_patch(FancyArrowPatch((0.562, 0.700 - i * 0.122), (0.598, 0.700 - i * 0.122),
-                                 arrowstyle='-|>', mutation_scale=9, lw=1.0, color=MUT, zorder=1))
+# then the sequence
+blk(0.225, 0.13, 0.635, 0.17, 'then the whole sequence at once', 'one shape per player  ·  second-difference penalties on latent, orientation, translation  ·  replaces post-hoc filtering', ACC, fs=8.0)
+arrow(0.555, 0.36, 0.555, 0.30, col=MUT, lw=1.0)
 
-# ---------------- result
-panel(0.812, 0.375, 0.158, 0.430, 'what comes out', 'src')
-lines(0.891, 0.705, ['reprojection', '3.8 px median', '', 'max joint angle 111°',
-                     'joint speed p99', '253 °/s', '', 'on the human manifold'], ha='center')
-
-# ---------------- the sequence stage, underneath
-AX.add_patch(FancyBboxPatch((0.030, 0.075), 0.940, 0.135, boxstyle='round,pad=0.008,rounding_size=0.012',
-                            lw=1.5, ec=ACC, fc=SOFT, zorder=2))
-AX.text(0.050, 0.163, 'then the whole sequence at once', fontsize=9.6, weight='bold', zorder=3)
-AX.text(0.050, 0.122, 'One body shape shared across all frames, and second-difference penalties on the latent, the root orientation and the translation.',
-        fontsize=8.6, color=MUT, zorder=3)
-AX.text(0.050, 0.092, 'This replaces post-hoc smoothing, which filtered in the wrong space: filtering vertices slides the joints, filtering parameters does not.',
-        fontsize=8.6, color=MUT, zorder=3)
-AX.add_patch(FancyArrowPatch((0.500, 0.245), (0.500, 0.212), arrowstyle='-|>', mutation_scale=10,
-                             lw=1.2, color=ACC, zorder=1))
-AX.add_patch(FancyArrowPatch((0.230, 0.590), (0.268, 0.590), arrowstyle='-|>', mutation_scale=10, lw=1.2, color=MUT))
-AX.add_patch(FancyArrowPatch((0.777, 0.590), (0.810, 0.590), arrowstyle='-|>', mutation_scale=10, lw=1.2, color=MUT))
-
+# result
+blk(0.905, 0.30, 0.070, 0.44, 'out', 'reproj\n3.8 px\n\njoint speed\np99 253°/s\n\nmax angle\n111°', LINE, fs=7.2, fill=False, top=True)
+arrow(0.860, 0.62, 0.905, 0.62)
 for ext in ('png', 'svg', 'pdf'):
-    fig.savefig('assets/fig_smplx_fit.%s' % ext, facecolor='white', bbox_inches='tight', pad_inches=0.06)
+    fig.savefig('assets/fig_smplx_fit.%s' % ext, facecolor='white', bbox_inches='tight', pad_inches=0.05)
 print('wrote assets/fig_smplx_fit.{png,svg,pdf}')
