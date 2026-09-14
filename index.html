@@ -109,7 +109,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <div class="abstract">
 <p>Recovering metric 3D trajectories of fast-moving sports projectiles from a single uncalibrated broadcast camera is fundamentally ill-posed. In broadcast badminton, standard monocular depth cues fail catastrophically: the shuttlecock is small and textureless (&sim;6.9&nbsp;px across a 1280-pixel frame), motion blur collapses optical scale, high-speed smashes travel nearly collinear with the optical axis, and the projectile never bounces during active play. Crucially, we demonstrate that validation via 2D reprojection residual is fundamentally deceptive: on high-speed smashes, candidate trajectories exhibiting a <b>46-fold</b> discrepancy in 3D error (0.06&nbsp;m vs. 2.78&nbsp;m) yield 2D reprojection residuals within a <b>0.20-pixel</b> band &mdash; far beneath visual tracker noise floors.</p>
 <p>To overcome this fundamental ambiguity, we introduce <b>SimTrack3D</b>, a physics-grounded framework built on the principle that while a monocular view cannot resolve axial depth, it measures the ground plane with sub-pixel precision. First, we resolve the focal-length degeneracy of coplanar court lines by formulating a non-coplanar calibration incorporating the elevated net cord, leveraging its 26&nbsp;mm catenary sag as an independent physical validation gate. Second, we synthesize <b>77,728</b> aerodynamically feasible trajectories by solving boundary-value problems anchored to <b>13,010</b> real tournament strokes, training <b>Shuttle3D</b>, a ray-depth transformer operating entirely in canonical viewing space. Third, we formulate a two-tier inference scheme featuring a null-space constrained rectifier that projects unconstrained predictions onto the physically admissible set along the two weakest eigenvectors of the reprojection curvature.</p>
-<p>On 6,553 real tournament strokes, SimTrack3D recovers physically valid trajectories for <b>96.0%</b> of strokes (with unfixable outliers explicitly flagged rather than hallucinated), compared to only 18.3% for unconstrained optimization baselines, reducing arrival endpoint error from 3.33&nbsp;m to <b>0.60&nbsp;m</b>. We further extend the synthetic domain from trajectories to <em>images</em>: a broadcast-registered renderer whose camera, player poses and motion blur are all measured from the footage itself, agreeing with the frame it reconstructs to 2.2&nbsp;px on the court lines and 3.8&nbsp;px on the players. Because it places a body fitted from the broadcast and a reconstructed shuttle in one metric frame, it also yields a geometrically independent probe of our own output: at 58 contact frames the striking wrist lies 0.58&nbsp;m from the line of sight through the annotated pixel but 1.37&nbsp;m from the reconstructed 3D point, localising the pipeline&rsquo;s residual depth error to the stroke seam. Finally, we formulate an image-computable observability metric <i>N</i>, which exhibits a strict power-law correlation with the Cram&eacute;r&ndash;Rao Lower Bound (CRLB&nbsp;&prop;&nbsp;<i>N</i><sup>&minus;0.98</sup>, R&sup2;&nbsp;=&nbsp;0.83). This theoretical formulation quantifies the exact boundary where visual data ceases to constrain depth and the domain prior dominates.</p>
+<p>On 6,553 real tournament strokes, SimTrack3D recovers physically valid trajectories for <b>96.0%</b> of strokes (with unfixable outliers explicitly flagged rather than hallucinated), compared to only 18.3% for unconstrained optimization baselines, reducing arrival endpoint error from 3.33&nbsp;m to <b>0.60&nbsp;m</b>. We further extend the synthetic domain from trajectories to <em>images</em>: a broadcast-registered renderer whose camera, player poses and motion blur are all measured from the footage itself, agreeing with the frame it reconstructs to 2.2&nbsp;px on the court lines and 3.8&nbsp;px on the players, and on which a detector trained only on broadcast localises the shuttle to 2.7&nbsp;px with the confidence it reports on real footage. Because it places a body fitted from the broadcast and a reconstructed shuttle in one metric frame, it also yields a geometrically independent probe of our own output: at 58 contact frames the striking wrist lies 0.52&nbsp;m from the line of sight through the tracker&rsquo;s own detection but 1.54&nbsp;m from the reconstructed 3D point, localising the pipeline&rsquo;s residual depth error to the stroke seam. Finally, we formulate an image-computable observability metric <i>N</i>, which exhibits a strict power-law correlation with the Cram&eacute;r&ndash;Rao Lower Bound (CRLB&nbsp;&prop;&nbsp;<i>N</i><sup>&minus;0.98</sup>, R&sup2;&nbsp;=&nbsp;0.83). This theoretical formulation quantifies the exact boundary where visual data ceases to constrain depth and the domain prior dominates.</p>
 </div>
 
 <div class="kv">
@@ -286,7 +286,7 @@ recoveries, where the L2 prior instead pays for pixels with implausible joint co
   <figcaption><b>Figure 7 &mdash; A rendered reconstruction of a real rally segment, beside the footage it
   was built from.</b> Left: broadcast. Right: the render. Same camera, both players fitted per frame from
   the broadcast's own 2D skeletons, shuttle on the reconstructed trajectory, motion blur at a measured
-  shutter. Frames 200&ndash;226 carry no shuttle annotation and are filled by solving a flight between the
+  shutter. Frames 200&ndash;226 have no reconstructed stroke and are filled by solving a flight between the
   previous stroke's landing point and the next stroke's launch point; the overlay marks them as
   reconstruction rather than data.</figcaption>
 </figure>
@@ -456,14 +456,47 @@ render used the corpus-median shutter of 1/116&nbsp;s while this clip is slower.
 clip from the streaks themselves &mdash; median 1/150&nbsp;s with an eight-fold spread across clips, 1/91 to
 1/1708 &mdash; and wiring that per-clip value into the renderer is the obvious correction.</p>
 
+<p><b>The acceptance test: a detector that has never seen a render.</b> Registration says the geometry
+is right; it does not say a detector would treat the image as broadcast. So the released TrackNetV5-Lite
+&mdash; trained on real footage only, not fine-tuned here &mdash; is run on the 91 rendered frames and on
+the 91 real frames they reconstruct, and scored against the projected 3D on the render. On the real side
+this corpus has no human per-frame 2D; the two references available are the raw TrackNetV3 detection
+(another detector's opinion) and the reconstruction's own reprojection (which carries the
+reconstruction's error), and both are reported as what they are.</p>
+
+<div class="tbl"><table>
+<tr><th>the released detector, same 90 frames</th><th>reference</th><th>median</th><th>p90</th><th>&lt; 4 px</th><th>&lt; 8 px</th><th>heatmap peak</th></tr>
+<tr><td>real footage</td><td>raw TrackNetV3 detection</td><td>1.9 px</td><td>3.0</td><td>96%</td><td>99%</td><td>0.69</td></tr>
+<tr><td>real footage, clean strokes</td><td>reconstruction reprojection</td><td>3.5 px</td><td>10.6</td><td>63%</td><td>83%</td><td>0.69</td></tr>
+<tr><td><b>rendered twin</b></td><td><b>true projection</b></td><td class="good"><b>2.7 px</b></td><td class="good">5.6</td><td>74%</td><td class="good">96%</td><td>0.66</td></tr>
+</table></div>
+
+<p>A detector that has never seen a rendered pixel localises the rendered shuttle to 2.7&nbsp;px at the
+median with 96% of frames inside 8&nbsp;px, and reports the same heatmap confidence on the render as on
+the broadcast (0.66 against 0.69). The only rendered frames it misses by more than 8&nbsp;px are the
+contact frames 160&ndash;164, where the racket frame occludes the shuttle at 8&ndash;9&nbsp;px; the
+physics-filled frames, with no player near the shuttle, are its best (2.2&nbsp;px). What this does
+<em>not</em> establish is that it fails on the same frames as on real footage: the real side has no
+ground truth, so a per-frame comparison is a comparison of two detectors, and we do not draw one.</p>
+
+<figure>
+  <img src="assets/fig_sim2real_detector.png" alt="Detection error per frame of the released detector on the real clip and on its rendered twin">
+  <figcaption><b>Figure 11 &mdash; The released detector on the same 91 frames, real and rendered.</b>
+  Top: pixel error per frame against each reference; the shaded frames have no reconstructed stroke and
+  carry a physics-solved shuttle. The reconstruction's reprojection is a noisy reference &mdash; its
+  excursions at 160&ndash;165 and across the filled stroke are the reconstruction's, not the detector's,
+  which the raw-detection line makes visible. Bottom: heatmap peak, the detector's own confidence, which
+  it does not distinguish between real and rendered.</figcaption>
+</figure>
+
 <p>The population step has its own failure mode, and it is a sampling failure rather than a fitting one.
 A first library built from randomly chosen 100-frame windows contained exactly <b>one</b> overhead strike
 among 58 striking poses, which makes a synthetic smash impossible to stage. Two explanations were natural
 and both were tested and rejected: keypoint confidence at overhead contacts is the <em>highest</em> in the
 corpus (0.97 against 0.94 elsewhere) and the fitted wrist reprojects 5.5&nbsp;px from the detected one, so
-the fit follows the data; and the distance from the nearest fitted wrist to the shuttle's line of sight,
+the fit follows the data; and the distance from the nearest fitted wrist to the line of sight through the raw detection,
 swept around each contact, reads
-1.20&nbsp;/&nbsp;0.86&nbsp;/&nbsp;<b>0.58</b>&nbsp;/&nbsp;1.00&nbsp;/&nbsp;1.44&nbsp;m at
+1.08&nbsp;/&nbsp;0.74&nbsp;/&nbsp;<b>0.52</b>&nbsp;/&nbsp;0.66&nbsp;/&nbsp;0.95&nbsp;m at
 &minus;8&nbsp;/&nbsp;&minus;4&nbsp;/&nbsp;0&nbsp;/&nbsp;+4&nbsp;/&nbsp;+8 frames &mdash; a clean minimum exactly at
 contact, so the striker is identified correctly. The cause is that random windows are mostly footwork.
 Selecting windows by the annotated stroke class, since smash, clear, cut and push are struck above the
@@ -479,26 +512,29 @@ head, changes the library without changing a line of the fitter.</p>
 
 <h3>5.8 An independent check on contact-frame depth</h3>
 <p>Placing a fitted body and a reconstructed shuttle in the same metric frame creates a comparison this
-problem does not otherwise admit, and it bears directly on the wrist-elevation anchor of &sect;3.5. Nothing
-in the pose fitting sees a shuttle annotation, and the body's depth comes from ankles on the court plane,
-so the body is an independent measurement of where the striking hand was.</p>
+problem does not otherwise admit, and it bears directly on the wrist-elevation anchor of &sect;3.5. The
+reference pixel is the tracker&rsquo;s raw detection, which the reconstruction consumes but never edits;
+nothing in the pose fitting sees a shuttle at all, and the body&rsquo;s depth comes from ankles on the
+court plane. The two sides of the comparison are therefore independent of each other and of the
+reconstruction being tested.</p>
 
 <figure>
   <img src="assets/fig_contact_depth.png" alt="Geometry of the contact-frame depth measurement, and the control sweep">
-  <figcaption><b>Figure 11 &mdash; The annotated pixel agrees with the arm; the depth along that
+  <figcaption><b>Figure 12 &mdash; The detected pixel agrees with the arm; the depth along that
   pixel&rsquo;s ray does not.</b> (a) The striking wrist sits about one racket from the line of sight
-  through the annotated pixel, and well beyond arm-and-racket reach from the reconstructed 3D point;
-  the band on the ray is where the annotation places the shuttle in depth. (b) The control: that
+  through the tracker&rsquo;s raw detection, and well beyond arm-and-racket reach from the reconstructed 3D point;
+  the band on the ray is where the reconstruction places the shuttle in depth. (b) The control: that
   distance has a clean minimum exactly at the contact frame, which is what rules out a misidentified
   striker.</figcaption>
 </figure>
 
 <p>Over 58 contact frames in 8 venues, the distance from the striking wrist to the <em>reconstructed 3D</em>
-shuttle is <b>1.37&nbsp;m</b> &mdash; beyond an arm plus a racket &mdash; while the distance from the same
-wrist to the <em>line of sight through the annotated pixel</em> is <b>0.58&nbsp;m</b>, which is about one
-racket. The annotated pixel therefore agrees with the fitted body, and the depth along that ray is what
-disagrees. Resolved along the sight-line the depth is unbiased but scattered: a median 0.06&nbsp;m nearer
-than the wrist's closest approach, with an interquartile range of <b>&minus;0.93 to +1.34&nbsp;m</b>.</p>
+shuttle is <b>1.54&nbsp;m</b> &mdash; beyond an arm plus a racket &mdash; while the distance from the same
+wrist to the <em>line of sight through the raw detection</em> is <b>0.52&nbsp;m</b>, which is about one
+racket. The detection therefore agrees with the fitted body, and the depth along that ray is what
+disagrees. The reconstructed point itself sits only 0.09&nbsp;m off the detection&rsquo;s ray, so the 2D fit
+is tight; resolved along the ray, its depth is scattered with a slight far bias: a median 0.21&nbsp;m
+beyond the wrist&rsquo;s closest approach, with an interquartile range of <b>&minus;1.11 to +1.65&nbsp;m</b>.</p>
 
 <p>This is what &sect;4 predicts rather than a contradiction of it. The contact frame is the seam between
 two solved flights, the instant at which the arc being fitted ends and the next begins, and it carries the
@@ -510,8 +546,8 @@ trajectory's mid-flight depth does not.</p>
 <h2 id="discussion">6. Discussion and Limitations</h2>
 <p><b>Operational scope and tracking continuity.</b> Following standard broadcast sports vision pipelines<sup class="cite">[<a href="#ref-7">7</a>]</sup>, our framework operates under the operational assumption of a stationary main broadcast camera. Furthermore, trajectory lifting is performed on stroke intervals with at least 45% visual tracking continuity. Across tournament venues, raw detector recall ranges from 9% to 92%, meaning analyzed rallies naturally reflect trackable game segments.</p>
 <p><b>Aerodynamic model sensitivity.</b> Synthesis and estimation share a quadratic drag model with terminal velocity <i>v<sub>T</sub></i>&nbsp;=&nbsp;6.8&nbsp;m/s. To quantify sensitivity to drag misspecification, we evaluated the estimator under perturbed terminal velocities (<i>v<sub>T</sub></i>&nbsp;&plusmn;&nbsp;15%). Perturbing <i>v<sub>T</sub></i> by &minus;15% (5.78&nbsp;m/s) increases mean 3D error by 63% (0.471&nbsp;m &rarr; 0.769&nbsp;m) and launch error from 0.309&nbsp;m to 1.474&nbsp;m. Remarkably, physical feasibility remains virtually unchanged (98.7% &rarr; 96.5%). This reinforces our core thesis: physical plausibility provides a necessary sanity boundary, but does not guarantee metric accuracy.</p>
-<p><b>Ground truth in broadcast sports.</b> Monocular sports vision lacks large-scale 3D sensor ground truth. In our corpus, 14 rally-final strokes provide an exact physical 3D anchor (<i>z</i>&nbsp;=&nbsp;0 at landing), on which SimTrack3D achieves a median 3D error of 1.00&nbsp;m and a landing height error of 0.32&nbsp;m. While these 14 strokes serve as an absolute sanity check rather than a comprehensive benchmark, our leave-one-anchor-out formulation provides a scalable proxy for single-camera sports evaluation. &sect;5.8 adds a second, geometrically independent probe of the same kind: a human body fitted from the broadcast, which never sees a shuttle annotation, bounds where the striking hand was at 58 contact frames and localises the pipeline&rsquo;s weakest depth to the stroke seam.</p>
-<p><b>What the image-level domain does not yet establish.</b> &sect;3.6 renders images that register to broadcast at 2.2&nbsp;px on the court and 3.8&nbsp;px on the players, but the acceptance test for a synthetic <em>image</em> domain is a detector trained or evaluated on it, and that experiment has not been run. Until it is, the renderer is validated as a measurement instrument &mdash; which is how &sect;5.8 uses it &mdash; and not yet as training data. Its known gaps are the shutter (per-clip exposure is measured but not wired in), lighting estimated from the real shadows, and the absence of crowd, stands and clothing.</p>
+<p><b>Ground truth in broadcast sports.</b> Monocular sports vision lacks large-scale 3D sensor ground truth. In our corpus, 14 rally-final strokes provide an exact physical 3D anchor (<i>z</i>&nbsp;=&nbsp;0 at landing), on which SimTrack3D achieves a median 3D error of 1.00&nbsp;m and a landing height error of 0.32&nbsp;m. While these 14 strokes serve as an absolute sanity check rather than a comprehensive benchmark, our leave-one-anchor-out formulation provides a scalable proxy for single-camera sports evaluation. &sect;5.8 adds a second, geometrically independent probe of the same kind: a human body fitted from the broadcast, which never sees a shuttle, bounds where the striking hand was at 58 contact frames and localises the pipeline&rsquo;s weakest depth to the stroke seam.</p>
+<p><b>What the image-level domain does not yet establish.</b> &sect;3.6 renders images that register to broadcast at 2.2&nbsp;px on the court and 3.8&nbsp;px on the players, and &sect;5.7 shows a detector trained only on broadcast treats them as broadcast &mdash; 2.7&nbsp;px median against the true projection, with the same confidence. What has not been run is the converse: a detector <em>trained</em> on the renders and evaluated on real footage. Until it is, the renderer is validated as a measurement instrument and as an evaluation domain, not yet as training data. Its known gaps are the shutter (per-clip exposure is measured but not wired in), lighting estimated from the real shadows, and the absence of crowd, stands and clothing.</p>
 
 <h2 id="conclusion">7. Conclusion</h2>
 <p>We presented SimTrack3D, a principled framework for monocular 3D trajectory reconstruction of fast-moving sports projectiles from broadcast video. By resolving focal-length degeneracy via sag-gated net-cord calibration, synthesizing domain-faithful trajectories via aerodynamic BVP formulation, and enforcing physical rules along unobservable null-space directions, SimTrack3D achieves 96.0% physically valid reconstructions on real tournament matches. Furthermore, our observability theory formalizes the boundary where sensory data ends and domain priors take over, establishing a rigorous foundation for single-camera 3D trajectory estimation.</p>
