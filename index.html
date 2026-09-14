@@ -257,7 +257,7 @@ recoveries, where the L2 prior instead pays for pixels with implausible joint co
   <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
     <source src="assets/sim_twin_vs_real.mp4" type="video/mp4">
   </video>
-  <figcaption><b>Figure 6 &mdash; A rendered reconstruction of a real rally segment, beside the footage it
+  <figcaption><b>Figure 4 &mdash; A rendered reconstruction of a real rally segment, beside the footage it
   was built from.</b> Left: broadcast. Right: the render. Same camera, both players fitted per frame from
   the broadcast's own 2D skeletons, shuttle on the reconstructed trajectory, motion blur at a measured
   shutter. Frames 200&ndash;226 carry no shuttle annotation and are filled by solving a flight between the
@@ -287,7 +287,7 @@ exactly as in &sect;3.2; only the height between them is solved.</p>
 
 <figure>
   <img src="assets/fig_observability.png" alt="Cramer-Rao bound against the observability number N on a log-log scale">
-  <figcaption><b>Figure 4 &mdash; The observability metric <i>N</i> predicts estimation bounds.</b> Evaluated across 7,994 strokes: the theoretical CRLB follows a strict power-law scaling CRLB&nbsp;&prop;&nbsp;<i>N</i><sup>&minus;0.98</sup> (R&sup2;&nbsp;=&nbsp;0.83). On high-<i>N</i> strokes (clears, lifts), Shuttle3D behaves as an unbiased estimator operating above the CRLB. On low-<i>N</i> strokes (smashes, drives), Shuttle3D beats the unbiased CRLB by up to 4.6&times;, demonstrating that depth recovery is dictated by the learned tactical prior rather than image evidence.</figcaption>
+  <figcaption><b>Figure 5 &mdash; The observability metric <i>N</i> predicts estimation bounds.</b> Evaluated across 7,994 strokes: the theoretical CRLB follows a strict power-law scaling CRLB&nbsp;&prop;&nbsp;<i>N</i><sup>&minus;0.98</sup> (R&sup2;&nbsp;=&nbsp;0.83). On high-<i>N</i> strokes (clears, lifts), Shuttle3D behaves as an unbiased estimator operating above the CRLB. On low-<i>N</i> strokes (smashes, drives), Shuttle3D beats the unbiased CRLB by up to 4.6&times;, demonstrating that depth recovery is dictated by the learned tactical prior rather than image evidence.</figcaption>
 </figure>
 
 <h3>4.3 Fisher information and the Cram&eacute;r&ndash;Rao bound</h3>
@@ -299,7 +299,7 @@ exactly as in &sect;3.2; only the height between them is solved.</p>
 <p>Crucially, the alignment angle to the line of sight and log&nbsp;<i>N</i> are uncorrelated (<i>r</i>&nbsp;=&nbsp;&minus;0.00), while alignment angle explains only part of the conditioning (<i>r</i>&nbsp;=&nbsp;+0.35 with log&nbsp;&sigma;<sub>min</sub>). This shows that monocular trajectory lifting exhibits <b>two independent degeneracy mechanisms</b>: (i) geometric collinearity with the viewing ray, and (ii) short temporal duration (small arc length). Grouping strokes by <i>N</i> accounts for both mechanisms simultaneously without requiring 3D truth.</p>
 
 <h3>4.4 Predicting recoverability and prior reliance</h3>
-<p>As plotted in Figure&nbsp;4, across 7,994 anchored strokes, the observability metric <i>N</i> predicts the theoretical CRLB via an empirical power law:</p>
+<p>As plotted in Figure&nbsp;5, across 7,994 anchored strokes, the observability metric <i>N</i> predicts the theoretical CRLB via an empirical power law:</p>
 <div class="eq">$$\text{CRLB} \propto N^{-0.98} \qquad (R^2 = 0.83,\ \text{Spearman } \rho = -0.92).$$</div>
 <p>Controlling for frame count, the partial correlation remains &minus;0.59.</p>
 <p><b>Quantifying prior reliance via bound violation.</b> An unbiased estimator cannot outperform the CRLB. However, as shown in Table&nbsp;1, Shuttle3D outperforms the unbiased CRLB on 9 out of 15 stroke categories (by up to 4.6&times; on flat drives). This occurs because our model acts as a Bayesian regularizer: on low-<i>N</i> strokes where visual evidence is indeterminate, it regresses toward typical tactical shot profiles, trading variance for domain-specific bias.</p>
@@ -372,11 +372,11 @@ exactly as in &sect;3.2; only the height between them is solved.</p>
 
 <figure>
   <img src="assets/fig_cord.png" alt="Diagnostic analysis of the net-cord clearance boundary in five panels">
-  <figcaption><b>Figure 5 &mdash; Diagnostic analysis of the net-cord clearance boundary.</b> (a) Timing vs. altitude ambiguity: because an image ray intersects the net plane at a unique height, clearance is fixed by the estimated crossing frame. (b) On synthetic strokes, violation rates are dictated by the true physical clearance margin. (c) Sim-to-real margin mismatch: real tournament players hit closer to the tape (median 0.18&nbsp;m) than synthetic BVP generators (0.37&nbsp;m). (d) Net-hit certificate: 10.3% of apparent cord violations hit the tape, where the rule does not apply.</figcaption>
+  <figcaption><b>Figure 6 &mdash; Diagnostic analysis of the net-cord clearance boundary.</b> (a) Timing vs. altitude ambiguity: because an image ray intersects the net plane at a unique height, clearance is fixed by the estimated crossing frame. (b) On synthetic strokes, violation rates are dictated by the true physical clearance margin. (c) Sim-to-real margin mismatch: real tournament players hit closer to the tape (median 0.18&nbsp;m) than synthetic BVP generators (0.37&nbsp;m). (d) Net-hit certificate: 10.3% of apparent cord violations hit the tape, where the rule does not apply.</figcaption>
 </figure>
 
 <h3>5.5 Diagnostic: net-cord clearance boundary</h3>
-<p>As illustrated in Figure&nbsp;5, on real footage 8.9% of unconstrained reconstructions violate net clearance. Our diagnostic confirms that this is not an altitude estimation failure.</p>
+<p>As illustrated in Figure&nbsp;6, on real footage 8.9% of unconstrained reconstructions violate net clearance. Our diagnostic confirms that this is not an altitude estimation failure.</p>
 <ul class="contrib">
   <li><b>Timing vs. height error.</b> An image ray intersects the known net plane at exactly one height; clearance is determined solely by the estimated frame of net crossing.</li>
   <li><b>Boundary sensitivity.</b> 89.7% of cord violations are resolved by a uniform depth scaling of merely 1.0% (median shortfall 0.11&nbsp;m). Net clearance is a high-sensitivity boundary test decided at the third significant figure of depth.</li>
