@@ -286,7 +286,9 @@ recoveries, where the L2 prior instead pays for pixels with implausible joint co
   <figcaption><b>Figure 7 &mdash; A rendered reconstruction of a real rally segment, beside the footage it
   was built from.</b> Left: broadcast. Right: the render. Same camera, both players fitted per frame from
   the broadcast's own 2D skeletons, shuttle on the reconstructed trajectory, motion blur at a measured
-  shutter. Frames 200&ndash;226 have no reconstructed stroke and are filled by solving a flight between the
+  shutter, and the cone's axis driven by the pitching ODE rather than snapped to the velocity &mdash; so the
+  post-impact turnover (153&deg; to under 10&deg; in 1.8 frames) follows from the restoring torque instead of
+  a hand-set interpolation. Frames 200&ndash;226 have no reconstructed stroke and are filled by solving a flight between the
   previous stroke's landing point and the next stroke's launch point; the overlay marks them as
   reconstruction rather than data.</figcaption>
 </figure>
