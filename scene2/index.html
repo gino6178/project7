@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rally on the real court</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --line: #262c39;
+    --ink: #e7ecf5; --dim: #8c97ab;
+    --traj: #f9761f; --ball: #fff3c4; --anchor0: #4ec8f0; --anchor1: #ff7a6b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  #wrap { max-width: 1240px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 2px; letter-spacing: .2px; }
+  p.sub { margin: 0 0 14px; color: var(--dim); font-size: 13px; }
+  #stagebox { position: relative; border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden; background: #05070b; container-type: inline-size; }
+  #plate { position: absolute; inset: 0; }
+  #bcast { position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: fill; background: #000; }
+  #gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  #hud, #legend { position: absolute; top: 10px; pointer-events: none; white-space: nowrap;
+    background: rgba(9,11,16,.76); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; backdrop-filter: blur(3px);
+    font-size: clamp(8.5px, 1.06cqw, 12px); line-height: 1.62; }
+  #hud { left: 10px; font-family: ui-monospace, Consolas, monospace; }
+  #legend { right: 10px; }
+  #hud b { color: #fff; font-weight: 600; }
+  .sw { display: inline-block; width: .85em; height: .85em; border-radius: 2px;
+    margin-right: .5em; vertical-align: -1px; }
+  @container (max-width: 620px) { #legend { display: none; } #hud { opacity: .88; } }
+  #boot { position: absolute; inset: 0; display: grid; place-items: center;
+    background: #05070b; color: var(--dim); font-size: 13px; z-index: 5; text-align: center; }
+  #bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-top: 12px; padding: 10px 12px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; }
+  button, select { background: #1c222e; color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover, select:hover { border-color: #3b4557; }
+  button.on { background: #24405f; border-color: #3c6da3; }
+  #scrub { flex: 1 1 240px; min-width: 180px; accent-color: #4a86d8; }
+  #tlabel { font: 12px ui-monospace, Consolas, monospace; color: var(--dim);
+    min-width: 132px; text-align: right; }
+  .grp { display: flex; gap: 6px; align-items: center; }
+  .grp span { color: var(--dim); font-size: 12px; }
+  #notes { margin-top: 16px; color: var(--dim); font-size: 12.5px; max-width: 900px; }
+  #notes b { color: var(--ink); font-weight: 600; }
+  #notes ul { padding-left: 18px; margin: 8px 0; }
+  code { background: #171c26; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  kbd { background: #1c222e; border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 5px; font: 11px ui-monospace, Consolas, monospace; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="wrap">
+  <h1>One rally, on the court it was actually played on</h1>
+  <p class="sub">JEON Hyeok Jin vs WANG Po Wei, Thailand Masters 2025 R32 &mdash; 380 broadcast frames at
+  30&nbsp;fps. The 3D shuttle track is our monocular reconstruction; the court, the lighting and the
+  players are all pixels from the broadcast itself.</p>
+
+  <div id="stagebox">
+    <div id="plate">
+      <video id="bcast" playsinline muted loop preload="auto"></video>
+      <canvas id="gl"></canvas>
+    </div>
+    <div id="hud"></div>
+    <div id="legend"></div>
+    <div id="boot">loading rally&hellip;</div>
+  </div>
+
+  <div id="bar">
+    <div class="grp">
+      <button id="mA" class="on">A &middot; broadcast overlay</button>
+      <button id="mB">B &middot; free viewpoint</button>
+    </div>
+    <button id="play">pause</button>
+    <input id="scrub" type="range" min="0" max="379" value="0" step="1">
+    <span id="tlabel">frame 0 / 379</span>
+    <div class="grp"><span>speed</span>
+      <select id="rate">
+        <option value="0.25">0.25&times;</option>
+        <option value="0.5">0.5&times;</option>
+        <option value="1" selected>1&times;</option>
+        <option value="2">2&times;</option>
+      </select>
+    </div>
+    <div class="grp"><span>view</span>
+      <button id="vBroad">broadcast</button>
+      <button id="vSide">side</button>
+      <button id="vTop">top</button>
+    </div>
+    <button id="trails">all trails</button>
+  </div>
+
+  <div id="notes">
+    <p><b>Mode A</b> puts the self-calibrated broadcast camera into three.js &mdash; same focal length,
+    same principal point, same pose &mdash; and draws the reconstruction straight onto the video.
+    Nothing is fitted per frame: if the calibration or the 3D were wrong, the orange tube would
+    drift off the shuttle. The HUD reports the distance between the projected 3D point and the
+    tracker's 2D detection for the current frame.</p>
+    <p><b>Mode B</b> is the same 3D scene seen from anywhere. The floor is the rally's own median
+    background frame rectified through the ground homography, and each player is that frame's
+    pixels cut out and stood up on the court at their measured foot position. It is a billboard,
+    not a model &mdash; turn far enough and you are looking at a flat photograph edge-on.</p>
+    <p>Keys: <kbd>A</kbd>/<kbd>B</kbd> mode, <kbd>Space</kbd> play/pause,
+    <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> step one frame.</p>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const boot = document.getElementById('boot');
+const stagebox = document.getElementById('stagebox');
+const canvas = document.getElementById('gl');
+const video = document.getElementById('bcast');
+const hud = document.getElementById('hud');
+const legend = document.getElementById('legend');
+
+const COL = { traj: 0xf9761f, trajDim: 0x8a4412, ball: 0xfff3c4,
+              a0: 0x4ec8f0, a1: 0xff7a6b, net: 0xdfe6f2 };
+
+function fail(msg) { boot.innerHTML = msg; boot.style.color = '#ff8080'; throw new Error(msg); }
+
+const M = await fetch('assets/rally.json').then(r => r.ok ? r.json() : fail('rally.json missing'));
+const N = M.n, FPS = M.fps;
+const CT = M.court, CAM = M.camera, TEX = M.texture, AT = M.atlas;
+
+/* ---------------------------------------------------------------- renderer */
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 2.05));
+const key = new THREE.DirectionalLight(0xffffff, 0.55);
+key.position.set(4, -8, 12); scene.add(key);
+
+/* Render coordinates: X across the court (0..6.10), Y along it (0..13.40, the
+   Blender/rigidfit frame where the court template's Y is flipped), Z up. */
+const CX = CT.w / 2, CY = CT.l / 2;
+
+/* ------------------------------------------------------- calibrated camera */
+// exact pinhole projection, principal point included (three.js cannot express
+// this with .fov alone -- see CLAUDE.md, the shift sign bites in Blender too).
+function pinholeProjection(f, cx, cy, w, h, near, far) {
+  const m = new THREE.Matrix4();
+  m.set(2 * f / w, 0, 1 - 2 * cx / w, 0,
+        0, 2 * f / h, 2 * cy / h - 1, 0,
+        0, 0, -(far + near) / (far - near), -2 * far * near / (far - near),
+        0, 0, -1, 0);
+  return m;
+}
+const R = CAM.R, Cc = CAM.C;
+// Blender/three camera basis = R^T * diag(1,-1,-1); columns are right/up/back.
+const camBasis = new THREE.Matrix4().set(
+  R[0][0], -R[1][0], -R[2][0], Cc[0],
+  R[0][1], -R[1][1], -R[2][1], Cc[1],
+  R[0][2], -R[1][2], -R[2][2], Cc[2],
+  0, 0, 0, 1);
+
+const camAR = new THREE.PerspectiveCamera();
+camAR.matrixAutoUpdate = false;
+camAR.matrixWorld.copy(camBasis);
+camAR.matrix.copy(camBasis);
+camAR.matrixWorldInverse.copy(camBasis).invert();
+camAR.projectionMatrix.copy(pinholeProjection(CAM.f, CAM.cx, CAM.cy, CAM.w, CAM.h, 0.3, 400));
+camAR.projectionMatrixInverse.copy(camAR.projectionMatrix).invert();
+camAR.updateProjectionMatrix = () => {};   // fixed to the calibration
+
+const camFree = new THREE.PerspectiveCamera(
+  2 * Math.atan(CAM.h / (2 * CAM.f)) * 180 / Math.PI, CAM.w / CAM.h, 0.3, 400);
+camFree.up.set(0, 0, 1);
+camFree.position.set(Cc[0], Cc[1], Cc[2]);
+
+const controls = new OrbitControls(camFree, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.target.set(CX, CY, 1.2);
+controls.minDistance = 4; controls.maxDistance = 90;
+controls.maxPolarAngle = Math.PI / 2 - 0.02;   // stay above the floor
+controls.enabled = false;
+controls.update();
+
+/* --------------------------------------------------------------- the court */
+const loader = new THREE.TextureLoader();
+const courtGroup = new THREE.Group(); scene.add(courtGroup);
+
+const floorTex = await loader.loadAsync('assets/' + TEX.file);
+floorTex.colorSpace = THREE.SRGBColorSpace;
+floorTex.flipY = false;                 // image row 0 is the low-Y edge
+floorTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(TEX.x1 - TEX.x0, TEX.y1 - TEX.y0),
+  new THREE.MeshBasicMaterial({ map: floorTex }));
+floor.position.set((TEX.x0 + TEX.x1) / 2, (TEX.y0 + TEX.y1) / 2, 0);
+courtGroup.add(floor);
+
+// a thin dark apron so the free camera never sees through to the void
+const apron = new THREE.Mesh(new THREE.PlaneGeometry(40, 46),
+  new THREE.MeshBasicMaterial({ color: 0x0c1018 }));
+apron.position.set(CX, CY, -0.01); courtGroup.add(apron);
+
+/* ------------------------------------------------------------------- net */
+const netGroup = new THREE.Group(); scene.add(netGroup);
+const NETY = CT.net_y, CORD = CT.net_cord, POST = CT.net_post;
+const netMat = new THREE.MeshBasicMaterial({ color: 0x1b2230, transparent: true,
+  opacity: 0.30, side: THREE.DoubleSide, depthWrite: false });
+const netMesh = new THREE.Mesh(new THREE.PlaneGeometry(CT.w, CORD - 0.76), netMat);
+netMesh.rotation.x = Math.PI / 2;
+netMesh.position.set(CX, NETY, 0.76 + (CORD - 0.76) / 2);
+netGroup.add(netMesh);
+function bar(x0, y0, z0, x1, y1, z1, r, color) {
+  const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1);
+  const d = new THREE.Vector3().subVectors(b, a);
+  const g = new THREE.CylinderGeometry(r, r, d.length(), 8);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color }));
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
+  return m;
+}
+netGroup.add(bar(0, NETY, CORD, CT.w, NETY, CORD, 0.018, COL.net));      // cord
+netGroup.add(bar(0, NETY, 0.76, CT.w, NETY, 0.76, 0.010, 0x9aa6bb));     // bottom tape
+netGroup.add(bar(0, NETY, 0, 0, NETY, POST, 0.035, 0x11151d));
+netGroup.add(bar(CT.w, NETY, 0, CT.w, NETY, POST, 0.035, 0x11151d));
+
+// court outline drawn as bright lines, so mode A gets a visible registration cue
+const lineMat = new THREE.LineBasicMaterial({ color: 0x64f0c8, transparent: true, opacity: 0.85 });
+const outline = new THREE.Group(); scene.add(outline);
+function poly(pts) {
+  const g = new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], p[1], 0.004)));
+  outline.add(new THREE.Line(g, lineMat));
+}
+poly([[0, 0], [CT.w, 0], [CT.w, CT.l], [0, CT.l], [0, 0]]);
+poly([[0.46, 0], [0.46, CT.l]]); poly([[CT.w - 0.46, 0], [CT.w - 0.46, CT.l]]);
+poly([[0, 0.76], [CT.w, 0.76]]); poly([[0, CT.l - 0.76], [CT.w, CT.l - 0.76]]);
+poly([[0, NETY - 1.98], [CT.w, NETY - 1.98]]); poly([[0, NETY + 1.98], [CT.w, NETY + 1.98]]);
+poly([[CX, 0], [CX, NETY - 1.98]]); poly([[CX, NETY + 1.98], [CX, CT.l]]);
+
+/* ---------------------------------------------------------- trajectories */
+const strokeOf = M.stroke, XYZ = M.xyz, UV = M.uv;
+const strokePts = new Map();   // stroke id -> [{f, v}]
+for (let i = 0; i < N; i++) {
+  const p = XYZ[i], s = strokeOf[i];
+  if (p === null || s === null) continue;
+  if (!strokePts.has(s)) strokePts.set(s, []);
+  strokePts.get(s).push({ f: i, v: new THREE.Vector3(p[0], p[1], p[2]) });
+}
+const tubes = [];
+for (const [s, pts] of [...strokePts.entries()].sort((a, b) => a[0] - b[0])) {
+  if (pts.length < 2) continue;
+  const RAD = 10;
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => p.v));
+  const segs = Math.max(2, (pts.length - 1) * 4);
+  const geo = new THREE.TubeGeometry(curve, segs, 0.045, RAD, false);
+  const mat = new THREE.MeshBasicMaterial({ color: COL.traj, transparent: true, opacity: 0.92 });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+  tubes.push({ s, mesh, geo, segs, radial: RAD, f0: pts[0].f, f1: pts[pts.length - 1].f });
+}
+
+const ball = new THREE.Mesh(new THREE.SphereGeometry(0.085, 20, 14),
+  new THREE.MeshBasicMaterial({ color: COL.ball }));
+scene.add(ball);
+const halo = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12),
+  new THREE.MeshBasicMaterial({ color: COL.ball, transparent: true, opacity: 0.22, depthWrite: false }));
+scene.add(halo);
+
+/* ------------------------------------------------------------- players */
+const atlasTex = await loader.loadAsync('assets/' + AT.file);
+atlasTex.colorSpace = THREE.SRGBColorSpace;
+atlasTex.flipY = false;
+atlasTex.generateMipmaps = false;
+atlasTex.minFilter = THREE.LinearFilter; atlasTex.magFilter = THREE.LinearFilter;
+
+const anchorCol = [COL.a0, COL.a1];
+const players = [0, 1].map(half => {
+  // one shared atlas texture; the cell is selected by rewriting the quad's UVs
+  // (cloning the texture would upload 56 MB twice).
+  const geo = new THREE.PlaneGeometry(1, 1);
+  const uv = geo.attributes.uv;
+  const mat = new THREE.MeshBasicMaterial({ map: atlasTex, transparent: true,
+    alphaTest: 0.06, side: THREE.DoubleSide, depthWrite: true });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.visible = false; scene.add(mesh);
+
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.32, 24),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+  shadow.position.z = 0.006; shadow.visible = false; scene.add(shadow);
+
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.30, 0.38, 32),
+    new THREE.MeshBasicMaterial({ color: anchorCol[half], transparent: true,
+      opacity: 0.95, side: THREE.DoubleSide, depthWrite: false }));
+  ring.position.z = 0.012; scene.add(ring);
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(0.30, 32),
+    new THREE.MeshBasicMaterial({ color: anchorCol[half], transparent: true,
+      opacity: 0.22, depthWrite: false }));
+  disc.position.z = 0.010; scene.add(disc);
+  return { mesh, mat, geo, uv, shadow, ring, disc };
+});
+
+/* --------------------------------------------------------- camera helpers */
+const Rm = new THREE.Matrix3().set(
+  R[0][0], R[0][1], R[0][2], R[1][0], R[1][1], R[1][2], R[2][0], R[2][1], R[2][2]);
+const Cv = new THREE.Vector3(Cc[0], Cc[1], Cc[2]);
+function axisDepth(p) {            // depth along the calibrated optical axis
+  const d = new THREE.Vector3().subVectors(p, Cv);
+  return R[2][0] * d.x + R[2][1] * d.y + R[2][2] * d.z;
+}
+function projectPx(p) {            // render point -> broadcast pixel
+  const d = new THREE.Vector3().subVectors(p, Cv);
+  const x = R[0][0] * d.x + R[0][1] * d.y + R[0][2] * d.z;
+  const y = R[1][0] * d.x + R[1][1] * d.y + R[1][2] * d.z;
+  const z = R[2][0] * d.x + R[2][1] * d.y + R[2][2] * d.z;
+  return [CAM.f * x / z + CAM.cx, CAM.f * y / z + CAM.cy];
+}
+
+/* ------------------------------------------------------ per-frame update */
+const errAll = [];
+for (let i = 0; i < N; i++) {
+  if (XYZ[i] && UV[i]) {
+    const q = projectPx(new THREE.Vector3(...XYZ[i]));
+    errAll.push(Math.hypot(q[0] - UV[i][0], q[1] - UV[i][1]));
+  }
+}
+const medAll = errAll.slice().sort((a, b) => a - b)[errAll.length >> 1];
+
+let mode = 'A', frame = 0, fpsEMA = 60, trailsAll = false;
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3();
+
+const basis = new THREE.Matrix4();
+function setPlayers(f) {
+  const list = M.players[f] || [];
+  const byHalf = [null, null];
+  for (const p of list) byHalf[p.half] = p;
+  for (let h = 0; h < 2; h++) {
+    const P = players[h], rec = byHalf[h];
+    P.rec = rec;
+    if (!rec) { P.mesh.visible = P.shadow.visible = false; P.ring.visible = P.disc.visible = false; continue; }
+    const foot = new THREE.Vector3(rec.foot[0], rec.foot[1], 0);
+    P.foot = foot;
+    P.ring.visible = P.disc.visible = true;
+    P.ring.position.set(foot.x, foot.y, 0.012);
+    P.disc.position.set(foot.x, foot.y, 0.010);
+
+    // atlas cell -> quad UVs. flipY is false, so image row 0 is v = 0, and the
+    // plane's two top vertices must take the cell's top edge.
+    const r = Math.floor(rec.cell / AT.cols), c = rec.cell % AT.cols;
+    const u0 = c / AT.cols, u1 = (c + 1) / AT.cols;
+    const vT = r / AT.rows, vB = (r + 1) / AT.rows;
+    const a = P.uv.array;
+    a[0] = u0; a[1] = vT; a[2] = u1; a[3] = vT;
+    a[4] = u0; a[5] = vB; a[6] = u1; a[7] = vB;
+    P.uv.needsUpdate = true;
+  }
+  faceCamera();
+}
+
+// Billboards must be re-yawed every rendered frame, not only when the frame
+// index changes -- otherwise orbiting a paused rally leaves them edge-on.
+function faceCamera() {
+  const camPos = (mode === 'A') ? Cv : camFree.position;
+  for (const P of players) {
+    const rec = P.rec;
+    if (!rec || mode === 'A') { P.mesh.visible = P.shadow.visible = false; continue; }
+    const foot = P.foot;
+    // a plane through the foot point, normal to the original view ray, is
+    // d / f metres per broadcast pixel
+    const d = axisDepth(foot), mpp = d / CAM.f;
+    const [bx0, by0, bx1, by1] = rec.box;
+    const wM = (bx1 - bx0) * mpp, hM = (by1 - by0) * mpp;
+    const footPx = projectPx(foot);
+    const dx = ((bx0 + bx1) / 2 - footPx[0]) * mpp;      // sideways offset of the crop
+    const dz = (by1 - footPx[1]) * mpp;                  // crop bottom sits below the feet
+    tmpA.set(camPos.x - foot.x, camPos.y - foot.y, 0);
+    if (tmpA.lengthSq() < 1e-6) tmpA.set(0, -1, 0);
+    tmpA.normalize();
+    tmpB.set(-tmpA.y, tmpA.x, 0);                        // right = up x normal
+    P.mesh.scale.set(wM, hM, 1);
+    P.mesh.position.set(foot.x + tmpB.x * dx, foot.y + tmpB.y * dx, hM / 2 - dz);
+    P.mesh.quaternion.setFromRotationMatrix(
+      basis.makeBasis(tmpB, tmpC.set(0, 0, 1), tmpA));
+    // a billboard seen from straight above is a flat smear; fade it out there
+    // and leave the foot anchor, rather than pretend it is a model
+    const horiz = Math.hypot(camPos.x - foot.x, camPos.y - foot.y);
+    const elev = Math.atan2(camPos.z - foot.z, Math.max(1e-3, horiz)) * 180 / Math.PI;
+    const op = 1 - Math.max(0, Math.min(1, (elev - 52) / 26));
+    P.mat.opacity = op;
+    P.mesh.visible = op > 0.02;
+    P.shadow.visible = true;
+    P.shadow.material.opacity = 0.30 * op;
+    P.shadow.position.set(foot.x, foot.y, 0.006);
+    const s = Math.max(0.6, wM / 0.9);
+    P.shadow.scale.set(s, s, 1);
+  }
+}
+
+function setFrame(f) {
+  frame = Math.max(0, Math.min(N - 1, f | 0));
+  // growing tubes; older strokes fade out so the court does not turn into a
+  // ball of spaghetti by the ninth rally shot
+  let live = -1;
+  for (const t of tubes) if (frame >= t.f0) live = t.s;
+  for (const t of tubes) {
+    if (frame < t.f0) { t.mesh.visible = false; continue; }
+    const span = Math.max(1, t.f1 - t.f0);
+    const g = Math.max(0, Math.min(1, (frame - t.f0) / span));
+    t.geo.setDrawRange(0, Math.max(1, Math.round(t.segs * g)) * t.radial * 6);
+    const past = frame > t.f1;
+    const age = live - t.s;
+    const op = !past ? 0.95 : (trailsAll ? 0.42 : Math.max(0, 0.46 - 0.15 * age));
+    t.mesh.visible = op > 0.02;
+    t.mesh.material.color.setHex(past ? COL.trajDim : COL.traj);
+    t.mesh.material.opacity = op;
+  }
+  const p = XYZ[frame];
+  ball.visible = halo.visible = !!p;
+  if (p) { ball.position.set(p[0], p[1], p[2]); halo.position.copy(ball.position); }
+  setPlayers(frame);
+
+  // HUD
+  let err = null;
+  if (p && UV[frame]) {
+    const q = projectPx(new THREE.Vector3(...p));
+    err = Math.hypot(q[0] - UV[frame][0], q[1] - UV[frame][1]);
+  }
+  const st = strokeOf[frame];
+  hud.innerHTML =
+    `<b>frame</b> ${String(frame).padStart(3, '0')}/${N - 1}  <b>t</b> ${(frame / FPS).toFixed(2)}s  <b>fps</b> ${fpsEMA.toFixed(0)}<br>` +
+    `<b>stroke</b> ${st === null ? '&mdash; between strokes' : (st + 1) + '/' + M.strokes}<br>` +
+    `<b>3D</b> ${p ? p[0].toFixed(2) + ', ' + p[1].toFixed(2) + ', ' + p[2].toFixed(2) + ' m'
+                   : '&mdash; not reconstructed'}<br>` +
+    `<b>reproj</b> ${err === null ? '&mdash;' : err.toFixed(1) + ' px'}` +
+    `<span style="color:var(--dim)">  median ${medAll.toFixed(1)} px / ${errAll.length} fr</span><br>` +
+    `<b>view</b> ${mode === 'A' ? 'broadcast overlay' : 'free'}`;
+  scrub.value = frame;
+  tlabel.textContent = `frame ${frame} / ${N - 1}`;
+}
+
+legend.innerHTML =
+  `<span class="sw" style="background:#f9761f"></span>reconstructed flight<br>` +
+  `<span class="sw" style="background:#fff3c4"></span>shuttle, this frame<br>` +
+  `<span class="sw" style="background:#64f0c8"></span>calibrated court<br>` +
+  `<span class="sw" style="background:#4ec8f0"></span>near foot anchor<br>` +
+  `<span class="sw" style="background:#ff7a6b"></span>far foot anchor`;
+
+/* ------------------------------------------------------------- controls */
+const scrub = document.getElementById('scrub');
+const tlabel = document.getElementById('tlabel');
+const btnPlay = document.getElementById('play');
+const btnA = document.getElementById('mA'), btnB = document.getElementById('mB');
+scrub.max = N - 1;
+
+function setMode(m) {
+  mode = m;
+  btnA.classList.toggle('on', m === 'A'); btnB.classList.toggle('on', m === 'B');
+  controls.enabled = (m === 'B');
+  video.style.opacity = (m === 'A') ? '1' : '0';
+  courtGroup.visible = (m === 'B');
+  outline.visible = (m === 'A');   // in B the rectified texture carries the real lines
+  netMat.opacity = (m === 'A') ? 0.10 : 0.34;
+  renderer.setClearAlpha(m === 'A' ? 0 : 1);
+  scene.background = (m === 'B') ? new THREE.Color(0x070a10) : null;
+  setFrame(frame);
+}
+btnA.onclick = () => setMode('A');
+btnB.onclick = () => {
+  const fresh = (mode === 'A');
+  setMode('B');
+  if (fresh) {                    // start exactly where the overlay left off...
+    flyTo('broadcast', 0);
+    flyTo('home', 1100);          // ...then ease out to a navigable viewpoint
+  }
+};
+
+const btnTrails = document.getElementById('trails');
+btnTrails.onclick = () => { trailsAll = !trailsAll; btnTrails.classList.toggle('on', trailsAll); setFrame(frame); };
+
+btnPlay.onclick = () => { if (video.paused) video.play(); else video.pause(); };
+video.addEventListener('play', () => btnPlay.textContent = 'pause');
+video.addEventListener('pause', () => btnPlay.textContent = 'play');
+scrub.oninput = () => { video.currentTime = (+scrub.value + 0.5) / FPS; setFrame(+scrub.value); };
+document.getElementById('rate').onchange = e => { video.playbackRate = +e.target.value; };
+
+/* Camera presets. Entering B starts from the calibrated pose AND its 14.1 deg
+   tele fov, so the first free frame is pixel-identical to the overlay; it then
+   eases back to a wider, navigable view. */
+const FOV_CAL = 2 * Math.atan(CAM.h / (2 * CAM.f)) * 180 / Math.PI;
+const VIEWS = {
+  broadcast: { pos: [Cc[0], Cc[1], Cc[2]], tgt: [CX, CY, 1.2], fov: FOV_CAL },
+  home:      { pos: [CX + 9.5, -9.5, 8.5], tgt: [CX, CY, 1.2], fov: 34 },
+  side:      { pos: [CX - 15, CY, 5.2], tgt: [CX, CY, 1.5], fov: 52 },
+  top:       { pos: [CX, CY - 0.001, 20], tgt: [CX, CY, 0], fov: 46 },
+};
+let tween = null;
+function flyTo(v, dur = 900) {
+  const to = VIEWS[v] || v;
+  tween = { t0: performance.now(), dur,
+    p0: camFree.position.clone(), t0v: controls.target.clone(), f0: camFree.fov,
+    p1: new THREE.Vector3(...to.pos), t1v: new THREE.Vector3(...to.tgt), f1: to.fov };
+  if (dur === 0) stepTween(1e9);
+}
+function stepTween(now) {
+  if (!tween) return;
+  const k = Math.min(1, (now - tween.t0) / tween.dur);
+  const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;   // easeInOutQuad
+  camFree.position.lerpVectors(tween.p0, tween.p1, e);
+  controls.target.lerpVectors(tween.t0v, tween.t1v, e);
+  camFree.fov = tween.f0 + (tween.f1 - tween.f0) * e;
+  camFree.updateProjectionMatrix();
+  if (k >= 1) tween = null;
+}
+controls.addEventListener('start', () => { tween = null; });
+document.getElementById('vBroad').onclick = () => { setMode('B'); flyTo('broadcast'); };
+document.getElementById('vSide').onclick = () => { setMode('B'); flyTo('side'); };
+document.getElementById('vTop').onclick = () => { setMode('B'); flyTo('top'); };
+
+addEventListener('keydown', e => {
+  if (e.key === 'a' || e.key === 'A') setMode('A');
+  else if (e.key === 'b' || e.key === 'B') btnB.onclick();
+  else if (e.key === ' ') { e.preventDefault(); btnPlay.onclick(); }
+  else if (e.key === 'ArrowLeft') { video.pause(); video.currentTime = Math.max(0, (frame - 1 + 0.5) / FPS); setFrame(frame - 1); }
+  else if (e.key === 'ArrowRight') { video.pause(); video.currentTime = (frame + 1 + 0.5) / FPS; setFrame(frame + 1); }
+});
+
+/* ------------------------------------------------------------- resizing */
+function resize() {
+  // aspect-ratio alone is not enough (CLAUDE.md); and with border-box sizing the
+  // 1 px frame has to be added back or the plate ends up short of 16:9.
+  const w = stagebox.clientWidth;
+  const h = Math.round(w * CAM.h / CAM.w);
+  const chrome = stagebox.offsetHeight - stagebox.clientHeight;
+  stagebox.style.height = (h + chrome) + 'px';
+  renderer.setSize(w, h, false);
+  camFree.aspect = CAM.w / CAM.h;
+  THREE.PerspectiveCamera.prototype.updateProjectionMatrix.call(camFree);
+}
+addEventListener('resize', resize);
+// the stage also changes width when a scrollbar appears, which fires no window
+// resize event -- observe the element itself, guarding against a feedback loop
+let lastW = -1;
+new ResizeObserver(() => {
+  const w = stagebox.clientWidth;
+  if (w !== lastW) { lastW = w; resize(); }
+}).observe(stagebox);
+
+/* ------------------------------------------------------------------ loop */
+let last = performance.now();
+function tick(now) {
+  const dt = Math.max(1e-3, (now - last) / 1000); last = now;
+  fpsEMA = fpsEMA * 0.9 + (1 / dt) * 0.1;
+  if (!video.paused && !video.seeking) {
+    const f = Math.min(N - 1, Math.floor(video.currentTime * FPS));
+    if (f !== frame) setFrame(f);
+  }
+  if (mode === 'B') { stepTween(now); controls.update(); faceCamera(); }
+  renderer.render(scene, mode === 'A' ? camAR : camFree);
+  requestAnimationFrame(tick);
+}
+
+video.src = 'assets/rally.mp4';
+video.addEventListener('loadeddata', () => {
+  resize();
+  setMode('A');
+  setFrame(0);
+  boot.style.display = 'none';
+  video.play().catch(() => { btnPlay.textContent = 'play'; });
+  requestAnimationFrame(tick);
+}, { once: true });
+video.addEventListener('error', () => fail('assets/rally.mp4 failed to load'));
+
+// debug / capture hook: composites the video plate and the GL canvas exactly as
+// the user sees them, at the broadcast's native resolution.
+window.__scene2 = {
+  setMode, setFrame, controls, camFree, video, renderer,
+  get frame() { return frame; },
+  seek(f) { video.pause(); video.currentTime = (f + 0.5) / FPS; setFrame(f); },
+  shot() {
+    renderer.render(scene, mode === 'A' ? camAR : camFree);
+    const c = document.createElement('canvas');
+    c.width = CAM.w; c.height = CAM.h;
+    const g = c.getContext('2d');
+    if (mode === 'A') g.drawImage(video, 0, 0, c.width, c.height);
+    else { g.fillStyle = '#070a10'; g.fillRect(0, 0, c.width, c.height); }
+    g.drawImage(canvas, 0, 0, c.width, c.height);
+    return c.toDataURL('image/png');
+  }
+};
+</script>
+</body>
+</html>
