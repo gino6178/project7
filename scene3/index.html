@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truth and reconstruction on the same court</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #141821; --line: #262c39;
+    --ink: #e7ecf5; --dim: #8c97ab;
+    --true: #35d2f5; --pred: #f9761f; --gap: #ff3b3b;
+    --anchor0: #4ec8f0; --anchor1: #ff7a6b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  #wrap { max-width: 1240px; margin: 0 auto; padding: 18px 16px 40px; }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 2px; letter-spacing: .2px; }
+  p.sub { margin: 0 0 14px; color: var(--dim); font-size: 13px; }
+  #stagebox { position: relative; border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden; background: #05070b; container-type: inline-size; }
+  #plate { position: absolute; inset: 0; }
+  #bcast { position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: fill; background: #000; }
+  #gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  #hud, #legend { position: absolute; top: 10px; pointer-events: none; white-space: nowrap;
+    background: rgba(9,11,16,.78); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 10px; backdrop-filter: blur(3px);
+    font-size: clamp(8.5px, 1.06cqw, 12px); line-height: 1.62; }
+  #hud { left: 10px; font-family: ui-monospace, Consolas, monospace; }
+  #legend { right: 10px; }
+  #hud b { color: #fff; font-weight: 600; }
+  .sw { display: inline-block; width: .85em; height: .85em; border-radius: 2px;
+    margin-right: .5em; vertical-align: -1px; }
+  @container (max-width: 620px) { #legend { display: none; } #hud { opacity: .9; } }
+  #boot { position: absolute; inset: 0; display: grid; place-items: center;
+    background: #05070b; color: var(--dim); font-size: 13px; z-index: 5; text-align: center; }
+  #atlasnote { position: absolute; left: 12px; bottom: 12px; pointer-events: none;
+    font: 12px/1.4 system-ui, sans-serif; color: #9fb0c0;
+    background: rgba(0,0,0,.45); padding: 4px 8px; border-radius: 4px; }
+  #bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    margin-top: 12px; padding: 10px 12px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; }
+  button, select { background: #1c222e; color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 11px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover, select:hover { border-color: #3b4557; }
+  button.on { background: #24405f; border-color: #3c6da3; }
+  #scrub { flex: 1 1 240px; min-width: 180px; accent-color: #4a86d8; }
+  #tlabel { font: 12px ui-monospace, Consolas, monospace; color: var(--dim);
+    min-width: 132px; text-align: right; }
+  .grp { display: flex; gap: 6px; align-items: center; }
+  .grp span { color: var(--dim); font-size: 12px; }
+  #notes { margin-top: 16px; color: var(--dim); font-size: 12.5px; max-width: 940px; }
+  #notes b { color: var(--ink); font-weight: 600; }
+  #notes table { border-collapse: collapse; margin: 10px 0; font-size: 12.5px; }
+  #notes td, #notes th { border: 1px solid var(--line); padding: 3px 10px; text-align: right; }
+  #notes th:first-child, #notes td:first-child { text-align: left; }
+  code { background: #171c26; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  kbd { background: #1c222e; border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 5px; font: 11px ui-monospace, Consolas, monospace; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="wrap">
+  <h1>The same rally, measured twice</h1>
+  <p class="sub" id="sub">Loading&hellip;</p>
+
+  <div id="stagebox">
+    <div id="plate">
+      <video id="bcast" playsinline muted loop preload="auto"></video>
+      <canvas id="gl"></canvas>
+    </div>
+    <div id="hud"></div>
+    <div id="legend"></div>
+    <div id="boot">loading rally&hellip;</div>
+    <div id="atlasnote">loading player cut-outs&hellip;</div>
+  </div>
+
+  <div id="bar">
+    <div class="grp">
+      <button id="mA" class="on">A &middot; camera overlay</button>
+      <button id="mB">B &middot; free viewpoint</button>
+    </div>
+    <button id="play">pause</button>
+    <input id="scrub" type="range" min="0" max="1" value="0" step="1">
+    <span id="tlabel">frame 0 / 0</span>
+    <div class="grp"><span>speed</span>
+      <select id="rate">
+        <option value="0.25">0.25&times;</option>
+        <option value="0.5" selected>0.5&times;</option>
+        <option value="1">1&times;</option>
+        <option value="2">2&times;</option>
+      </select>
+    </div>
+    <div class="grp"><span>view</span>
+      <button id="vCam">camera</button>
+      <button id="vSide">side</button>
+      <button id="vTop">top</button>
+    </div>
+    <button id="bars" class="on">error bars</button>
+    <button id="trails">all strokes</button>
+  </div>
+
+  <div id="notes">
+    <p><b>Two independent measurements of one shuttle.</b> The cyan tube is the multi-view
+    reconstruction from ten cameras &mdash; the reference. The orange tube is Shuttle3D reading
+    <em>one</em> of those ten views and nothing else, the same monocular pipeline the paper
+    evaluates on broadcast. The red rods are the gap between them, drawn to scale in metres.</p>
+    <p><b>Mode A</b> puts the calibrated camera into three.js &mdash; same focal length, same
+    principal point, same pose &mdash; and draws both tracks onto the video. Nothing is fitted
+    per frame. The lens is a 92&deg; wide angle, so the video is remapped once into the pinhole
+    the browser can draw; the painted court and the net cord then land on their own pixels to
+    0.0&nbsp;px, and the cord was never part of any fit.</p>
+    <p><b>Mode B</b> is the same scene from anywhere. The floor is that camera's median
+    background rectified through the ground homography, and each player is that frame's pixels
+    cut out and stood up at the foot position the multi-view bodies give. It is a billboard, not
+    a model.</p>
+    <p id="caveat"></p>
+    <p>Keys: <kbd>A</kbd>/<kbd>B</kbd> mode, <kbd>Space</kbd> play/pause,
+    <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> step one frame.</p>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const boot = document.getElementById('boot');
+const stagebox = document.getElementById('stagebox');
+const canvas = document.getElementById('gl');
+const video = document.getElementById('bcast');
+const hud = document.getElementById('hud');
+const legend = document.getElementById('legend');
+
+const COL = { tru: 0x35d2f5, truDim: 0x1a6b7d, pred: 0xf9761f, predDim: 0x8a4412,
+              gap: 0xff3b3b, ballT: 0xdff6ff, ballP: 0xffe2c4,
+              a0: 0x4ec8f0, a1: 0xff7a6b, net: 0xdfe6f2, court: 0x64f0c8 };
+
+function fail(msg) { boot.innerHTML = msg; boot.style.color = '#ff8080'; throw new Error(msg); }
+
+const M = await fetch('assets/rally.json').then(r => r.ok ? r.json() : fail('rally.json missing'));
+const N = M.n, FPS = M.fps;
+const CT = M.court, CAM = M.camera, TEX = M.texture, AT = M.atlas;
+const TRUE = M.xyz_true, PRED = M.xyz_pred, STROKE = M.stroke, ERR = M.err;
+const CX = CT.w / 2, CY = CT.l / 2;
+
+/* World frame: court metres, X across (0..6.10), Y along (0..13.40), Z up.
+   The multi-view alignment, the camera fit and the lifter all live in it, so
+   nothing is flipped anywhere in this file. */
+
+/* ---------------------------------------------------------------- renderer */
+// preserveDrawingBuffer so a composite can be read back after an explicit
+// render; without it the read returns a half-cleared canvas, which looks like a
+// camera bug and is not one.
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true,
+  preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 2.05));
+const key = new THREE.DirectionalLight(0xffffff, 0.55);
+key.position.set(4, 18, 12); scene.add(key);
+
+/* ------------------------------------------------------- calibrated camera */
+// exact pinhole, principal point included: three.js cannot express an off-centre
+// principal point through .fov alone.
+function pinholeProjection(f, cx, cy, w, h, near, far) {
+  const m = new THREE.Matrix4();
+  m.set(2 * f / w, 0, 1 - 2 * cx / w, 0,
+        0, 2 * f / h, 2 * cy / h - 1, 0,
+        0, 0, -(far + near) / (far - near), -2 * far * near / (far - near),
+        0, 0, -1, 0);
+  return m;
+}
+const R = CAM.R, Cc = CAM.C;
+// camera basis = R^T * diag(1,-1,-1); columns are right / up / back.
+const camBasis = new THREE.Matrix4().set(
+  R[0][0], -R[1][0], -R[2][0], Cc[0],
+  R[0][1], -R[1][1], -R[2][1], Cc[1],
+  R[0][2], -R[1][2], -R[2][2], Cc[2],
+  0, 0, 0, 1);
+
+const camAR = new THREE.PerspectiveCamera();
+camAR.matrixAutoUpdate = false;
+camAR.matrixWorld.copy(camBasis);
+camAR.matrix.copy(camBasis);
+camAR.matrixWorldInverse.copy(camBasis).invert();
+camAR.projectionMatrix.copy(pinholeProjection(CAM.f, CAM.cx, CAM.cy, CAM.w, CAM.h, 0.3, 400));
+camAR.projectionMatrixInverse.copy(camAR.projectionMatrix).invert();
+camAR.updateProjectionMatrix = () => {};
+
+const FOV_CAL = 2 * Math.atan(CAM.h / (2 * CAM.f)) * 180 / Math.PI;
+const camFree = new THREE.PerspectiveCamera(FOV_CAL, CAM.w / CAM.h, 0.3, 400);
+camFree.up.set(0, 0, 1);
+camFree.position.set(Cc[0], Cc[1], Cc[2]);
+
+const controls = new OrbitControls(camFree, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.target.set(CX, CY, 1.2);
+controls.minDistance = 4; controls.maxDistance = 90;
+controls.maxPolarAngle = Math.PI / 2 - 0.02;
+controls.enabled = false;
+controls.update();
+
+/* --------------------------------------------------------------- the court */
+const loader = new THREE.TextureLoader();
+const courtGroup = new THREE.Group(); scene.add(courtGroup);
+
+const floorTex = await loader.loadAsync('assets/' + TEX.file);
+floorTex.colorSpace = THREE.SRGBColorSpace;
+floorTex.flipY = false;                 // image row 0 is the low-Y edge
+floorTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(TEX.x1 - TEX.x0, TEX.y1 - TEX.y0),
+  new THREE.MeshBasicMaterial({ map: floorTex }));
+floor.position.set((TEX.x0 + TEX.x1) / 2, (TEX.y0 + TEX.y1) / 2, 0);
+courtGroup.add(floor);
+const apron = new THREE.Mesh(new THREE.PlaneGeometry(46, 52),
+  new THREE.MeshBasicMaterial({ color: 0x0c1018 }));
+apron.position.set(CX, CY, -0.01); courtGroup.add(apron);
+
+/* ------------------------------------------------------------------- net */
+const NETY = CT.net_y, CORD = CT.net_cord, POST = CT.net_post;
+const netMat = new THREE.MeshBasicMaterial({ color: 0x1b2230, transparent: true,
+  opacity: 0.30, side: THREE.DoubleSide, depthWrite: false });
+const netMesh = new THREE.Mesh(new THREE.PlaneGeometry(CT.w, CORD - 0.76), netMat);
+netMesh.rotation.x = Math.PI / 2;
+netMesh.position.set(CX, NETY, 0.76 + (CORD - 0.76) / 2);
+scene.add(netMesh);
+function bar(x0, y0, z0, x1, y1, z1, r, color) {
+  const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1);
+  const d = new THREE.Vector3().subVectors(b, a);
+  const g = new THREE.CylinderGeometry(r, r, d.length(), 8);
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color }));
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize());
+  return m;
+}
+const netGroup = new THREE.Group(); scene.add(netGroup);
+netGroup.add(bar(0, NETY, CORD, CT.w, NETY, CORD, 0.018, COL.net));
+netGroup.add(bar(0, NETY, 0.76, CT.w, NETY, 0.76, 0.010, 0x9aa6bb));
+netGroup.add(bar(0, NETY, 0, 0, NETY, POST, 0.035, 0x11151d));
+netGroup.add(bar(CT.w, NETY, 0, CT.w, NETY, POST, 0.035, 0x11151d));
+
+// the one camera the monocular reconstruction is allowed to see, on its mast
+const camMark = new THREE.Group(); scene.add(camMark);
+{
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.30, 0.8, 18),
+    new THREE.MeshBasicMaterial({ color: 0xd9dde8 }));
+  cone.position.set(Cc[0], Cc[1], Cc[2]);
+  cone.lookAt(CX, CY, 1.4);
+  cone.rotateX(Math.PI / 2);
+  camMark.add(cone);
+  camMark.add(bar(Cc[0], Cc[1], 0, Cc[0], Cc[1], Cc[2], 0.03, 0x3a4150));
+  // the sight lines to the four court corners, so the 92 deg view is visible
+  const fr = new THREE.LineSegments(
+    new THREE.BufferGeometry().setFromPoints([[0, 0], [CT.w, 0], [CT.w, CT.l], [0, CT.l]]
+      .flatMap(c => [new THREE.Vector3(Cc[0], Cc[1], Cc[2]), new THREE.Vector3(c[0], c[1], 0)])),
+    new THREE.LineBasicMaterial({ color: 0x5b6a86, transparent: true, opacity: 0.45 }));
+  camMark.add(fr);
+}
+
+// court outline: the registration cue in mode A
+const lineMat = new THREE.LineBasicMaterial({ color: COL.court, transparent: true, opacity: 0.85 });
+const outline = new THREE.Group(); scene.add(outline);
+function poly(pts) {
+  const g = new THREE.BufferGeometry().setFromPoints(
+    pts.map(p => new THREE.Vector3(p[0], p[1], 0.004)));
+  outline.add(new THREE.Line(g, lineMat));
+}
+poly([[0, 0], [CT.w, 0], [CT.w, CT.l], [0, CT.l], [0, 0]]);
+poly([[0.46, 0], [0.46, CT.l]]); poly([[CT.w - 0.46, 0], [CT.w - 0.46, CT.l]]);
+poly([[0, 0.76], [CT.w, 0.76]]); poly([[0, CT.l - 0.76], [CT.w, CT.l - 0.76]]);
+poly([[0, NETY - 1.98], [CT.w, NETY - 1.98]]); poly([[0, NETY + 1.98], [CT.w, NETY + 1.98]]);
+poly([[CX, 0], [CX, NETY - 1.98]]); poly([[CX, NETY + 1.98], [CX, CT.l]]);
+
+/* ---------------------------------------------------------- trajectories */
+// one tube per stroke per source; the monocular track can have holes (frames
+// where the shuttle left the picture) so it is cut into contiguous runs.
+function tubeOf(pts, colour, radius) {
+  if (pts.length < 2) return null;
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => p.v));
+  const RAD = 10, segs = Math.max(2, (pts.length - 1) * 4);
+  const geo = new THREE.TubeGeometry(curve, segs, radius, RAD, false);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial(
+    { color: colour, transparent: true, opacity: 0.92 }));
+  scene.add(mesh);
+  return { mesh, geo, segs, radial: RAD, f0: pts[0].f, f1: pts[pts.length - 1].f };
+}
+const tubes = [];
+M.strokes.forEach(s => {
+  const k = s.k;
+  const tp = [], runs = [];
+  let run = [];
+  for (let f = 0; f < N; f++) {
+    if (STROKE[f] !== k) continue;
+    if (TRUE[f]) tp.push({ f, v: new THREE.Vector3(...TRUE[f]) });
+    if (PRED[f]) run.push({ f, v: new THREE.Vector3(...PRED[f]) });
+    else if (run.length) { runs.push(run); run = []; }
+  }
+  if (run.length) runs.push(run);
+  const t = tubeOf(tp, COL.tru, 0.024);
+  if (t) tubes.push(Object.assign(t, { s: k, kind: 't' }));
+  runs.forEach(r => {
+    const p = tubeOf(r, COL.pred, 0.024);
+    if (p) tubes.push(Object.assign(p, { s: k, kind: 'p' }));
+  });
+});
+
+// error rods: one per frame, shown for the live stroke only
+const rodGeo = new THREE.CylinderGeometry(0.012, 0.012, 1, 6);
+rodGeo.translate(0, 0.5, 0);
+const rodMat = new THREE.MeshBasicMaterial({ color: COL.gap, transparent: true, opacity: 0.75 });
+const rods = [];
+const UP = new THREE.Vector3(0, 1, 0);
+for (let f = 0; f < N; f += 2) {
+  if (!TRUE[f] || !PRED[f]) continue;
+  const a = new THREE.Vector3(...TRUE[f]), b = new THREE.Vector3(...PRED[f]);
+  const d = new THREE.Vector3().subVectors(b, a);
+  if (d.length() < 0.03) continue;
+  const m = new THREE.Mesh(rodGeo, rodMat);
+  m.position.copy(a);
+  m.scale.set(1, d.length(), 1);
+  m.quaternion.setFromUnitVectors(UP, d.clone().normalize());
+  m.visible = false;
+  scene.add(m);
+  rods.push({ mesh: m, f, s: STROKE[f] });
+}
+// the live gap, thicker
+const liveGeo = new THREE.CylinderGeometry(0.022, 0.022, 1, 8);
+liveGeo.translate(0, 0.5, 0);
+const live = new THREE.Mesh(liveGeo, new THREE.MeshBasicMaterial({ color: COL.gap }));
+scene.add(live);
+
+function ball(colour, r) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14),
+    new THREE.MeshBasicMaterial({ color: colour }));
+  scene.add(m);
+  return m;
+}
+const bT = ball(COL.ballT, 0.055), bP = ball(COL.ballP, 0.055);
+const haloT = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12),
+  new THREE.MeshBasicMaterial({ color: COL.tru, transparent: true, opacity: 0.20, depthWrite: false }));
+scene.add(haloT);
+
+/* ------------------------------------------------------------- players */
+// The atlas is the one large asset and is NOT awaited: the scene, the video and
+// both tracks come up on the small files, billboards appear when it arrives.
+let atlasReady = false;
+const atlasTex = loader.load('assets/' + AT.file, () => {
+  atlasTex.colorSpace = THREE.SRGBColorSpace;
+  atlasTex.flipY = false;
+  atlasTex.generateMipmaps = false;
+  atlasTex.minFilter = THREE.LinearFilter; atlasTex.magFilter = THREE.LinearFilter;
+  atlasTex.needsUpdate = true;
+  atlasReady = true;
+  const n = document.getElementById('atlasnote'); if (n) n.remove();
+}, undefined, () => {
+  const n = document.getElementById('atlasnote');
+  if (n) n.textContent = 'player cut-outs failed to load';
+});
+
+const anchorCol = [COL.a0, COL.a1];
+const players = [0, 1].map(half => {
+  const geo = new THREE.PlaneGeometry(1, 1);
+  const mat = new THREE.MeshBasicMaterial({ map: atlasTex, transparent: true,
+    alphaTest: 0.06, side: THREE.DoubleSide, depthWrite: true });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.visible = false; scene.add(mesh);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.32, 24),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+  shadow.position.z = 0.006; shadow.visible = false; scene.add(shadow);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.30, 0.38, 32),
+    new THREE.MeshBasicMaterial({ color: anchorCol[half], transparent: true,
+      opacity: 0.95, side: THREE.DoubleSide, depthWrite: false }));
+  ring.position.z = 0.012; scene.add(ring);
+  return { mesh, mat, geo, uv: geo.attributes.uv, shadow, ring };
+});
+
+/* --------------------------------------------------------- camera helpers */
+const Cv = new THREE.Vector3(Cc[0], Cc[1], Cc[2]);
+function axisDepth(p) {
+  const d = new THREE.Vector3().subVectors(p, Cv);
+  return R[2][0] * d.x + R[2][1] * d.y + R[2][2] * d.z;
+}
+function projectPx(p) {
+  const d = new THREE.Vector3().subVectors(p, Cv);
+  const x = R[0][0] * d.x + R[0][1] * d.y + R[0][2] * d.z;
+  const y = R[1][0] * d.x + R[1][1] * d.y + R[1][2] * d.z;
+  const z = R[2][0] * d.x + R[2][1] * d.y + R[2][2] * d.z;
+  return [CAM.f * x / z + CAM.cx, CAM.f * y / z + CAM.cy];
+}
+
+/* ------------------------------------------------------ per-frame update */
+let mode = 'A', frame = 0, fpsEMA = 60, trailsAll = false, showBars = true;
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), tmpC = new THREE.Vector3();
+const basis = new THREE.Matrix4();
+
+function setPlayers(f) {
+  const list = M.players[f] || [];
+  const byHalf = [null, null];
+  for (const p of list) byHalf[p.half] = p;
+  for (let h = 0; h < 2; h++) {
+    const P = players[h], rec = byHalf[h];
+    P.rec = rec;
+    if (!rec) { P.mesh.visible = P.shadow.visible = P.ring.visible = false; continue; }
+    P.foot = new THREE.Vector3(rec.foot[0], rec.foot[1], 0);
+    P.ring.visible = true;
+    P.ring.position.set(P.foot.x, P.foot.y, 0.012);
+    const r = Math.floor(rec.cell / AT.cols), c = rec.cell % AT.cols;
+    const u0 = c / AT.cols, u1 = (c + 1) / AT.cols;
+    const vT = r / AT.rows, vB = (r + 1) / AT.rows;
+    const a = P.uv.array;
+    a[0] = u0; a[1] = vT; a[2] = u1; a[3] = vT;
+    a[4] = u0; a[5] = vB; a[6] = u1; a[7] = vB;
+    P.uv.needsUpdate = true;
+  }
+  faceCamera();
+}
+
+// Billboards are re-yawed every rendered frame, not only when the frame index
+// changes, or orbiting a paused rally leaves them edge-on.
+function faceCamera() {
+  const camPos = (mode === 'A') ? Cv : camFree.position;
+  for (const P of players) {
+    const rec = P.rec;
+    if (!rec || mode === 'A' || !atlasReady) { P.mesh.visible = P.shadow.visible = false; continue; }
+    const foot = P.foot;
+    const mpp = axisDepth(foot) / CAM.f;       // metres per pixel on a plane through the feet
+    const [bx0, by0, bx1, by1] = rec.box;
+    const wM = (bx1 - bx0) * mpp, hM = (by1 - by0) * mpp;
+    const footPx = projectPx(foot);
+    const dx = ((bx0 + bx1) / 2 - footPx[0]) * mpp;
+    const dz = (by1 - footPx[1]) * mpp;
+    tmpA.set(camPos.x - foot.x, camPos.y - foot.y, 0);
+    if (tmpA.lengthSq() < 1e-6) tmpA.set(0, -1, 0);
+    tmpA.normalize();
+    tmpB.set(-tmpA.y, tmpA.x, 0);
+    P.mesh.scale.set(wM, hM, 1);
+    P.mesh.position.set(foot.x + tmpB.x * dx, foot.y + tmpB.y * dx, hM / 2 - dz);
+    P.mesh.quaternion.setFromRotationMatrix(basis.makeBasis(tmpB, tmpC.set(0, 0, 1), tmpA));
+    const horiz = Math.hypot(camPos.x - foot.x, camPos.y - foot.y);
+    const elev = Math.atan2(camPos.z - foot.z, Math.max(1e-3, horiz)) * 180 / Math.PI;
+    const op = 1 - Math.max(0, Math.min(1, (elev - 52) / 26));
+    P.mat.opacity = op;
+    P.mesh.visible = op > 0.02;
+    P.shadow.visible = true;
+    P.shadow.material.opacity = 0.30 * op;
+    P.shadow.position.set(foot.x, foot.y, 0.006);
+    const s = Math.max(0.6, wM / 0.9);
+    P.shadow.scale.set(s, s, 1);
+  }
+}
+
+function setFrame(f) {
+  frame = Math.max(0, Math.min(N - 1, f | 0));
+  const k = STROKE[frame];
+  for (const t of tubes) {
+    if (frame < t.f0) { t.mesh.visible = false; continue; }
+    const span = Math.max(1, t.f1 - t.f0);
+    const g = Math.max(0, Math.min(1, (frame - t.f0) / span));
+    t.geo.setDrawRange(0, Math.max(1, Math.round(t.segs * g)) * t.radial * 6);
+    const past = frame > t.f1;
+    const on = trailsAll || t.s === k || !past;
+    const op = !past ? 0.95 : (trailsAll ? 0.42 : (t.s === k ? 0.55 : 0));
+    t.mesh.visible = on && op > 0.02;
+    t.mesh.material.color.setHex(past ? (t.kind === 't' ? COL.truDim : COL.predDim)
+                                      : (t.kind === 't' ? COL.tru : COL.pred));
+    t.mesh.material.opacity = op;
+  }
+  for (const r of rods)
+    r.mesh.visible = showBars && r.f <= frame && (trailsAll || r.s === k);
+
+  const p = TRUE[frame], q = PRED[frame];
+  bT.visible = haloT.visible = !!p;
+  if (p) { bT.position.set(p[0], p[1], p[2]); haloT.position.copy(bT.position); }
+  bP.visible = !!q;
+  if (q) bP.position.set(q[0], q[1], q[2]);
+  if (p && q) {
+    tmpA.set(p[0], p[1], p[2]);
+    tmpB.set(q[0], q[1], q[2]).sub(tmpA);
+    const len = tmpB.length();
+    live.visible = len > 0.02;
+    live.position.copy(tmpA);
+    live.scale.set(1, len, 1);
+    live.quaternion.setFromUnitVectors(UP, tmpB.normalize());
+  } else live.visible = false;
+  setPlayers(frame);
+
+  const st = k >= 0 ? M.strokes[k] : null;
+  hud.innerHTML =
+    `<b>frame</b> ${String(frame).padStart(3, '0')}/${N - 1}  <b>t</b> ${(frame / FPS).toFixed(2)}s  <b>fps</b> ${fpsEMA.toFixed(0)}<br>` +
+    `<b>stroke</b> ${st ? (k + 1) + '/' + M.strokes.length + '  &mdash; ' +
+      Math.round(100 * st.nobs / st.n) + '% of the flight inside the picture' : '&mdash;'}<br>` +
+    `<b>multi&#8209;view</b> ${p ? p.map(v => v.toFixed(2)).join(', ') + ' m' : '&mdash;'}<br>` +
+    `<b>monocular</b> ${q ? q.map(v => v.toFixed(2)).join(', ') + ' m' : '&mdash; shuttle outside the picture'}<br>` +
+    `<b>gap</b> ${ERR[frame] === null ? '&mdash;' : ERR[frame].toFixed(3) + ' m'}` +
+    `<span style="color:var(--dim)">  this stroke ${st && st.err_med !== null ? st.err_med.toFixed(3) + ' m median' : '&mdash;'}</span><br>` +
+    `<b>view</b> ${mode === 'A' ? 'camera overlay' : 'free'}`;
+  scrub.value = frame;
+  tlabel.textContent = `frame ${frame} / ${N - 1}`;
+}
+
+legend.innerHTML =
+  `<span class="sw" style="background:#35d2f5"></span>multi&#8209;view 3D (reference)<br>` +
+  `<span class="sw" style="background:#f9761f"></span>Shuttle3D, this one view<br>` +
+  `<span class="sw" style="background:#ff3b3b"></span>the gap, to scale<br>` +
+  `<span class="sw" style="background:#64f0c8"></span>calibrated court<br>` +
+  `<span class="sw" style="background:#4ec8f0"></span><span class="sw" style="background:#ff7a6b"></span>foot anchors`;
+
+const sub = document.getElementById('sub');
+sub.innerHTML = `Session ${M.session}, rally ${M.rally} &mdash; ${N} frames at ${FPS}&nbsp;fps, ` +
+  `seen from camera ${M.cam} of the ten. The multi-view reconstruction is the reference; ` +
+  `<code>${M.model}</code> sees only this one view, with the two players' ground positions ` +
+  `(the multi-view bodies' pelvis, dropped to the floor) as anchors. Median gap over the frames it reconstructs: ` +
+  `<b>${M.err_all.median.toFixed(2)}&nbsp;m</b> (no anchors: ${M.err_all.median_none.toFixed(2)}&nbsp;m).`;
+document.getElementById('caveat').innerHTML =
+  `<b>What this view is not.</b> This camera sits ${Math.hypot(Cc[0] - CX, Cc[1] - CY).toFixed(1)}&nbsp;m ` +
+  `from the court centre at ${Cc[2].toFixed(1)}&nbsp;m, with a ${(2 * Math.atan(CAM.w / (2 * CAM.f)) * 180 / Math.PI).toFixed(0)}&deg; ` +
+  `field of view &mdash; far outside the broadcast geometry Shuttle3D was trained on ` +
+  `(12&ndash;39&nbsp;m, 19&ndash;57&deg;), and close enough that the shuttle leaves the frame ` +
+  `through the top on nearly half the rally. Both strokes are held out: the session is in the ` +
+  `held-out split and no real 3D ever entered training. Projected through this calibration, the ` +
+  `multi-view shuttle lands ${M.reproj.truth_median.toFixed(1)}&nbsp;px from where a blob ` +
+  `detector finds the shuttle in the picture, over the ${M.reproj.n} frames it is confident on. ` +
+  `Split along and across the track, that is ${M.reproj.along >= 0 ? '+' : ''}${M.reproj.along.toFixed(1)} ` +
+  `and ${M.reproj.across >= 0 ? '+' : ''}${M.reproj.across.toFixed(1)}&nbsp;px: a timing error would ` +
+  `show up along the track, where the shuttle moves tens of pixels per frame, and it does not. ` +
+  `What is left is across the track, about the length of a shuttle at that range.`;
+
+/* ------------------------------------------------------------- controls */
+const scrub = document.getElementById('scrub');
+const tlabel = document.getElementById('tlabel');
+const btnPlay = document.getElementById('play');
+const btnA = document.getElementById('mA'), btnB = document.getElementById('mB');
+scrub.max = N - 1;
+
+function setMode(m) {
+  mode = m;
+  btnA.classList.toggle('on', m === 'A'); btnB.classList.toggle('on', m === 'B');
+  controls.enabled = (m === 'B');
+  video.style.opacity = (m === 'A') ? '1' : '0';
+  courtGroup.visible = (m === 'B');
+  camMark.visible = (m === 'B');
+  outline.visible = (m === 'A');
+  netMat.opacity = (m === 'A') ? 0.10 : 0.34;
+  renderer.setClearAlpha(m === 'A' ? 0 : 1);
+  scene.background = (m === 'B') ? new THREE.Color(0x070a10) : null;
+  setFrame(frame);
+}
+btnA.onclick = () => setMode('A');
+btnB.onclick = () => {
+  const fresh = (mode === 'A');
+  setMode('B');
+  if (fresh) { flyTo('camera', 0); flyTo('home', 1100); }
+};
+const btnTrails = document.getElementById('trails');
+btnTrails.onclick = () => {
+  trailsAll = !trailsAll;
+  btnTrails.classList.toggle('on', trailsAll); setFrame(frame);
+};
+const btnBars = document.getElementById('bars');
+btnBars.onclick = () => {
+  showBars = !showBars;
+  btnBars.classList.toggle('on', showBars); setFrame(frame);
+};
+
+btnPlay.onclick = () => { if (video.paused) video.play(); else video.pause(); };
+video.addEventListener('play', () => btnPlay.textContent = 'pause');
+video.addEventListener('pause', () => btnPlay.textContent = 'play');
+scrub.oninput = () => { video.currentTime = (+scrub.value + 0.5) / FPS; setFrame(+scrub.value); };
+document.getElementById('rate').onchange = e => { video.playbackRate = +e.target.value; };
+
+const VIEWS = {
+  camera: { pos: [Cc[0], Cc[1], Cc[2]], tgt: [CX, CY, 1.2], fov: FOV_CAL },
+  home:   { pos: [CX + 9.0, CY + 10.5, 6.6], tgt: [CX, CY - 0.6, 1.6], fov: 40 },
+  side:   { pos: [CX - 16, CY, 5.5], tgt: [CX, CY, 1.6], fov: 50 },
+  top:    { pos: [CX, CY + 0.001, 22], tgt: [CX, CY, 0], fov: 46 },
+};
+let tween = null;
+function flyTo(v, dur = 900) {
+  const to = VIEWS[v] || v;
+  if (!dur) {                       // snap, rather than divide the tween by zero
+    tween = null;
+    camFree.position.set(...to.pos);
+    controls.target.set(...to.tgt);
+    camFree.fov = to.fov;
+    camFree.updateProjectionMatrix();
+    controls.update();
+    return;
+  }
+  tween = { t0: performance.now(), dur,
+    p0: camFree.position.clone(), t0v: controls.target.clone(), f0: camFree.fov,
+    p1: new THREE.Vector3(...to.pos), t1v: new THREE.Vector3(...to.tgt), f1: to.fov };
+}
+function stepTween(now) {
+  if (!tween) return;
+  const k = Math.min(1, (now - tween.t0) / tween.dur);
+  const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+  camFree.position.lerpVectors(tween.p0, tween.p1, e);
+  controls.target.lerpVectors(tween.t0v, tween.t1v, e);
+  camFree.fov = tween.f0 + (tween.f1 - tween.f0) * e;
+  camFree.updateProjectionMatrix();
+  if (k >= 1) tween = null;
+}
+controls.addEventListener('start', () => { tween = null; });
+document.getElementById('vCam').onclick = () => { setMode('B'); flyTo('camera'); };
+document.getElementById('vSide').onclick = () => { setMode('B'); flyTo('side'); };
+document.getElementById('vTop').onclick = () => { setMode('B'); flyTo('top'); };
+
+addEventListener('keydown', e => {
+  if (e.key === 'a' || e.key === 'A') setMode('A');
+  else if (e.key === 'b' || e.key === 'B') btnB.onclick();
+  else if (e.key === ' ') { e.preventDefault(); btnPlay.onclick(); }
+  else if (e.key === 'ArrowLeft') { video.pause(); video.currentTime = Math.max(0, (frame - 1 + 0.5) / FPS); setFrame(frame - 1); }
+  else if (e.key === 'ArrowRight') { video.pause(); video.currentTime = (frame + 1 + 0.5) / FPS; setFrame(frame + 1); }
+});
+
+/* ------------------------------------------------------------- resizing */
+function resize() {
+  const w = stagebox.clientWidth;
+  const h = Math.round(w * CAM.h / CAM.w);
+  const chrome = stagebox.offsetHeight - stagebox.clientHeight;
+  stagebox.style.height = (h + chrome) + 'px';
+  renderer.setSize(w, h, false);
+  camFree.aspect = CAM.w / CAM.h;
+  THREE.PerspectiveCamera.prototype.updateProjectionMatrix.call(camFree);
+}
+addEventListener('resize', resize);
+let lastW = -1;
+new ResizeObserver(() => {
+  const w = stagebox.clientWidth;
+  if (w !== lastW) { lastW = w; resize(); }
+}).observe(stagebox);
+
+/* ------------------------------------------------------------------ loop */
+let last = performance.now();
+function tick(now) {
+  const dt = Math.max(1e-3, (now - last) / 1000); last = now;
+  fpsEMA = fpsEMA * 0.9 + (1 / dt) * 0.1;
+  if (!video.paused && !video.seeking) {
+    const f = Math.min(N - 1, Math.floor(video.currentTime * FPS));
+    if (f !== frame) setFrame(f);
+  }
+  if (mode === 'B') { stepTween(now); controls.update(); faceCamera(); }
+  renderer.render(scene, mode === 'A' ? camAR : camFree);
+  requestAnimationFrame(tick);
+}
+
+video.src = 'assets/rally.mp4';
+video.playbackRate = 0.5;
+video.addEventListener('loadeddata', () => {
+  resize();
+  setMode('A');
+  setFrame(0);
+  boot.style.display = 'none';
+  video.play().catch(() => { btnPlay.textContent = 'play'; });
+  requestAnimationFrame(tick);
+}, { once: true });
+video.addEventListener('error', () => fail('assets/rally.mp4 failed to load'));
+
+window.__scene3 = {
+  setMode, setFrame, controls, camFree, video, renderer, flyTo,
+  get frame() { return frame; },
+  seek(f) { video.pause(); video.currentTime = (f + 0.5) / FPS; setFrame(f); },
+  // The overlay layer, alone, at the canvas's own size.  drawImage() on a WebGL
+  // canvas can hand back the presented front buffer, which lags the render by a
+  // frame or two and captures a camera pose that was already replaced;
+  // toDataURL() reads the buffer just drawn.  In mode A the video plate is
+  // behind this and is composited outside the browser.
+  shot(w, h) {
+    // Render at a size of our own: the stage element is zero-wide whenever the
+    // pane is collapsed, and then the canvas is 0x0 and the capture is empty.
+    const W = w || CAM.w, H = h || CAM.h;
+    renderer.setSize(W, H, false);
+    camFree.aspect = W / H;
+    THREE.PerspectiveCamera.prototype.updateProjectionMatrix.call(camFree);
+    faceCamera();
+    renderer.render(scene, mode === 'A' ? camAR : camFree);
+    const url = canvas.toDataURL('image/png');
+    resize();
+    return url;
+  }
+};
+</script>
+</body>
+</html>
