@@ -1,0 +1,312 @@
+{
+  "pdf": "assets\\fig_method.pdf",
+  "auditable": true,
+  "verdict": "REVIEW REQUIRED",
+  "page_count": 1,
+  "visible_text_box_count": 35,
+  "text_trace_count": 35,
+  "stroke_path_count": 126,
+  "filled_region_count": 72,
+  "image_region_count": 3,
+  "summary": {
+    "fail": 0,
+    "warn": 12,
+    "contained_fill_overlays": 13,
+    "contained_image_overlays": 0
+  },
+  "thresholds": {
+    "text_inset_pt": 0.6,
+    "min_overlap_ratio": 0.05,
+    "clipping_tolerance_pt": 0.5
+  },
+  "findings": [
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "ms per stroke",
+      "text_bbox": [
+        98.68586730957031,
+        233.39511108398438,
+        131.60414123535156,
+        238.59510803222656
+      ],
+      "other_text": null,
+      "other_bbox": [
+        7.199999809265137,
+        165.81246948242188,
+        127.09748840332031,
+        248.4283447265625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        90000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "GPU batch,",
+      "text_bbox": [
+        101.67024230957031,
+        228.0476531982422,
+        128.6053009033203,
+        233.24765014648438
+      ],
+      "other_text": null,
+      "other_bbox": [
+        7.199999809265137,
+        165.81246948242188,
+        127.09748840332031,
+        248.4283447265625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        90000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "held out: observed receiver",
+      "text_bbox": [
+        196.85482788085938,
+        171.83689880371094,
+        263.0078430175781,
+        177.03689575195312
+      ],
+      "other_text": null,
+      "other_bbox": [
+        136.6892852783203,
+        165.81246948242188,
+        256.5867919921875,
+        248.4283447265625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        109000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "camera",
+      "text_bbox": [
+        262.79827880859375,
+        80.01422882080078,
+        280.77081298828125,
+        85.2142333984375
+      ],
+      "other_text": null,
+      "other_bbox": [
+        266.1785888671875,
+        31.97479248046875,
+        386.0760803222656,
+        114.59065246582031
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        3000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "rays: 2 dof per frame",
+      "text_bbox": [
+        342.88818359375,
+        102.4024887084961,
+        392.7994079589844,
+        107.60249328613281
+      ],
+      "other_text": null,
+      "other_bbox": [
+        266.1785888671875,
+        31.97479248046875,
+        386.0760803222656,
+        114.59065246582031
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        3000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "2.7 M parameters; synthetic flights only; never a pixel; ms per stroke",
+      "text_bbox": [
+        398.6653137207031,
+        37.81981658935547,
+        562.2696533203125,
+        43.01981735229492
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        31.97479248046875,
+        515.5653686523438,
+        114.59065246582031
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        27000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "13,117 real strokes: annotated start, end, flight time",
+      "text_bbox": [
+        399.9499206542969,
+        173.41099548339844,
+        524.6530151367188,
+        178.61099243164062
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        165.81246948242188,
+        515.5653686523438,
+        248.4283447265625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        126000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "aerodynamic two-point problems: 77,728 flights",
+      "text_bbox": [
+        399.9499206542969,
+        180.3850555419922,
+        516.9339599609375,
+        185.58505249023438
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        165.81246948242188,
+        515.5653686523438,
+        248.4283447265625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        126000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "32 measured cameras, 7 venues held out; audited",
+      "text_bbox": [
+        399.9499206542969,
+        187.35911560058594,
+        519.949462890625,
+        192.55911254882812
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        165.81246948242188,
+        515.5653686523438,
+        248.4283447265625
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        126000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "global token: camera, feet,",
+      "text_bbox": [
+        465.5807189941406,
+        99.00399017333984,
+        529.7047729492188,
+        104.20399475097656
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        31.97479248046875,
+        515.5653686523438,
+        114.59065246582031
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        27000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "receiver, landing, wrist z",
+      "text_bbox": [
+        468.8697814941406,
+        104.94519805908203,
+        526.4207763671875,
+        110.14520263671875
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        31.97479248046875,
+        515.5653686523438,
+        114.59065246582031
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        27000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "(grey = absent)",
+      "text_bbox": [
+        479.1041564941406,
+        110.88640594482422,
+        516.1314697265625,
+        116.08641052246094
+      ],
+      "other_text": null,
+      "other_bbox": [
+        395.6678771972656,
+        31.97479248046875,
+        515.5653686523438,
+        114.59065246582031
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        27000
+      ]
+    }
+  ]
+}
