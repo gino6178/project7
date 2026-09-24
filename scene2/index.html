@@ -75,6 +75,7 @@
     <div id="hud"></div>
     <div id="legend"></div>
     <div id="boot">loading rally&hellip;</div>
+    <div id="atlasnote" style="position:absolute;left:12px;bottom:12px;font:12px/1.4 system-ui,sans-serif;color:#9fb0c0;background:rgba(0,0,0,.45);padding:4px 8px;border-radius:4px;pointer-events:none">loading player cut-outs (4.6 MB)&hellip;</div>
   </div>
 
   <div id="bar">
@@ -276,11 +277,19 @@ const halo = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12),
 scene.add(halo);
 
 /* ------------------------------------------------------------- players */
-const atlasTex = await loader.loadAsync('assets/' + AT.file);
-atlasTex.colorSpace = THREE.SRGBColorSpace;
-atlasTex.flipY = false;
-atlasTex.generateMipmaps = false;
-atlasTex.minFilter = THREE.LinearFilter; atlasTex.magFilter = THREE.LinearFilter;
+// The player atlas is the one large asset (4.6 MB). It is not awaited: the
+// scene, the video and the reconstruction come up as soon as the small files
+// are in, and the billboards appear when the atlas arrives.
+let atlasReady = false;
+const atlasTex = loader.load('assets/' + AT.file, () => {
+  atlasTex.colorSpace = THREE.SRGBColorSpace;
+  atlasTex.flipY = false;
+  atlasTex.generateMipmaps = false;
+  atlasTex.minFilter = THREE.LinearFilter; atlasTex.magFilter = THREE.LinearFilter;
+  atlasTex.needsUpdate = true;
+  atlasReady = true;
+  const n = document.getElementById('atlasnote'); if (n) n.remove();
+}, undefined, () => { const n = document.getElementById('atlasnote'); if (n) n.textContent = 'player cut-outs failed to load'; });
 
 const anchorCol = [COL.a0, COL.a1];
 const players = [0, 1].map(half => {
@@ -371,7 +380,7 @@ function faceCamera() {
   const camPos = (mode === 'A') ? Cv : camFree.position;
   for (const P of players) {
     const rec = P.rec;
-    if (!rec || mode === 'A') { P.mesh.visible = P.shadow.visible = false; continue; }
+    if (!rec || mode === 'A' || !atlasReady) { P.mesh.visible = P.shadow.visible = false; continue; }
     const foot = P.foot;
     // a plane through the foot point, normal to the original view ray, is
     // d / f metres per broadcast pixel
