@@ -61,9 +61,6 @@ ol.refs i{color:var(--ink)}
 ol.refs a{color:var(--muted);font-size:12.5px;word-break:break-all}
 .note{font-size:14.5px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:14px 0}
 code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:3px}
-.viewer{position:relative;width:100%;aspect-ratio:16/9;background:#0b1417;border-radius:6px;overflow:hidden;border:1px solid #223038;cursor:grab}
-.viewer canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
-.viewer .hud{position:absolute;left:12px;top:10px;font-family:var(--mono);font-size:12px;color:#8fb6af;pointer-events:none}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13.5px;color:var(--muted);margin-top:10px}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
 pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 16px;border-radius:6px;overflow-x:auto}
@@ -84,7 +81,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
   <p class="authors">Gino Chang</p>
   <p class="affil">Project page &middot; 2026</p>
   <div class="links">
-    <a class="on" href="./">SimTrack3D</a><a href="#demo">Demo</a><a href="#related">Related work</a><a href="#method">Method</a><a href="#theory">Observability</a><a href="#exp">Experiments</a><a href="#viewer-section">3D viewer</a><a href="#supp">Supplementary</a>
+    <a class="on" href="./">SimTrack3D</a><a href="#demo">Demo</a><a href="#related">Related work</a><a href="#method">Method</a><a href="#theory">Observability</a><a href="#exp">Experiments</a><a href="#supp">Supplementary</a>
   </div>
 </header>
 <div class="teaser"><img src="assets/hero.png" alt="Reconstructed shuttle trajectories over a calibrated court"></div>
@@ -349,21 +346,6 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <h2 id="conclusion">7. Conclusion</h2>
 <p>We presented SimTrack3D, a physics-grounded framework for monocular 3D ballistic trajectory reconstruction in the extreme regime of high-speed, textureless and bounce-free flight. By resolving the focal-length degeneracy through the elevated net cord, gated by its withheld catenary sag, learning a canonical ray-depth representation from boundary-value simulation, and projecting predictions along the null space of the reprojection curvature matrix, SimTrack3D returns physically feasible reconstructions for 96.0% of 6,553 tournament strokes. Against an independent ten-camera multi-view reference, Shuttle3D reaches a median 3D error of 0.53&nbsp;m on 400 held-out strokes, 1.15&times; the median Cram&eacute;r&ndash;Rao bound of 0.46&nbsp;m, and on 2,682 held-out strokes real foot anchors bring the median from 0.51&nbsp;m to 0.36&nbsp;m. Where ballistic depth is visually unobservable, planar anchors, not a more faithful simulator, are what move metric 3D recovery, while the null-space projection secures physical feasibility.</p>
-
-<h2 id="viewer-section">Interactive 3D model</h2>
-<p>The rally on the real court: our monocular reconstruction drawn onto the broadcast through the calibrated camera (mode A, median 4.1&nbsp;px between the projected shuttle and the 2D detection), or orbited freely with the floor textured from the footage and the players cut from each frame (mode B). Open it full-page <a href="scene2/index.html">here</a>.</p>
-<div style="position:relative;width:100%;aspect-ratio:16/10;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#0b1417">
-  <iframe src="scene2/index.html" title="Rally on the real court" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
-</div>
-<p>The calibrated court, net, broadcast camera frustum and forty reconstructed trajectories, exported from Blender. Drag to orbit, scroll to zoom.</p>
-<div class="viewer" id="viewer"><div class="hud" id="hud">loading model…</div></div>
-<div class="legend">
-  <span style="--c:#e8552f">attack (smash, net kill, rush)</span>
-  <span style="--c:#d9a32e">flat (drop, drive, push)</span>
-  <span style="--c:#3b82c4">lift / clear</span>
-  <span style="--c:#2fa98c">net play</span>
-  <span style="--c:#f2bf33">broadcast camera</span>
-</div>
 
 <h2 id="cite">BibTeX</h2>
 <pre>@misc{chang2026shuttle3d,
@@ -1017,68 +999,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 </script>
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-} }
-</script>
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const wrap = document.getElementById('viewer'), hud = document.getElementById('hud');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.outputColorSpace = THREE.SRGBColorSpace;
-wrap.appendChild(renderer.domElement);
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b1417);
-const cam = new THREE.PerspectiveCamera(36, 16 / 9, 0.05, 1000);
-const ctl = new OrbitControls(cam, renderer.domElement);
-ctl.enableDamping = true;
-scene.add(new THREE.HemisphereLight(0xe6f0ee, 0x1a2a2c, 1.5));
-const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-scene.add(sun);
-
-function resize() {
-  // force the 16:9 box explicitly: the canvas's intrinsic size otherwise fights
-  // the CSS aspect-ratio in narrow panes and the viewer turns tall and narrow
-  const w = wrap.clientWidth, h = Math.round(w * 9 / 16);
-  wrap.style.height = h + 'px';
-  renderer.setSize(w, h, true);
-  cam.aspect = w / h; cam.updateProjectionMatrix();
-}
-window.addEventListener('resize', resize);
-resize();
-
-// glTF is Y-up (Blender's exporter converts Z-up on export). Frame the COURT
-// only: the broadcast camera sits ~30 m away and would drag the bounding-box
-// centre off the court if it were included.
-function frame(obj) {
-  const box = new THREE.Box3();
-  obj.traverse(o => { if (o.isMesh && !/camera_body|frustum/.test(o.name)) box.expandByObject(o); });
-  const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
-  cam.up.set(0, 1, 0);
-  const r = Math.max(size.x, size.y, size.z);
-  // raised three-quarter view; r is the court's long axis (13.4 m), so ~1.9 r
-  // keeps the whole court and the 8 m arcs inside a 16:9 frame
-  cam.position.set(c.x + r * 1.25, c.y + r * 0.95, c.z + r * 1.15);
-  ctl.target.copy(c);
-  sun.position.set(c.x + 8, c.y + 14, c.z + 6);
-  ctl.minDistance = r * 0.2; ctl.maxDistance = r * 5;
-  ctl.update();
-}
-
-new GLTFLoader().load('assets/court_scene.glb', g => {
-  scene.add(g.scene);
-  frame(g.scene);
-  let n = 0; g.scene.traverse(o => { if (o.isMesh) n++; });
-  hud.textContent = n + ' meshes · drag to orbit · scroll to zoom';
-}, undefined, () => { hud.textContent = 'could not load assets/court_scene.glb'; });
-
-(function loop() { requestAnimationFrame(loop); ctl.update(); renderer.render(scene, cam); })();
-</script>
 </body>
 </html>
