@@ -6,49 +6,46 @@
 <title>SimTrack3D: Monocular 3D Trajectory Reconstruction of Fast-Moving Sports Projectiles via Broadcast-Calibrated Sim-to-Real Transfer</title>
 <meta name="description" content="SimTrack3D: monocular 3D trajectory reconstruction of fast-moving sports projectiles, with badminton as the limiting case. Cameras measured from real broadcasts, 77,728 aerodynamically solved strokes anchored to real annotations, the Shuttle3D ray-depth lifter, and an observability number that says when the learned prior is doing the work.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
-  --ink:#141b1e; --muted:#5c6b70; --line:#dfe6e5; --ground:#fbfcfc; --surface:#ffffff;
-  --acc:#0e7c7b; --acc2:#e8552f; --soft:#e9f3f2;
-  --serif:"Source Serif 4",Georgia,serif; --sans:"Source Sans 3","Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --ink:#141b1e; --muted:#5c6b70; --line:#e7ebea; --ground:#ffffff; --surface:#ffffff;
+  --acc:#0e7c7b; --acc2:#e8552f; --soft:#eef6f5;
+  --sans:"Noto Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 *{box-sizing:border-box}
 html{background:var(--ground)}
-body{margin:0;color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6}
-.page{max-width:920px;margin:0 auto;padding:48px 24px 96px}
-header{text-align:center;margin-bottom:36px}
-h1{font-family:var(--serif);font-weight:600;font-size:clamp(28px,4.2vw,40px);line-height:1.2;margin:0 0 14px;text-wrap:balance}
+body{margin:0;color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.65}
+.page{max-width:960px;margin:0 auto;padding:56px 24px 96px}
+header{text-align:center;margin-bottom:40px}
+h1{font-family:var(--sans);font-weight:600;font-size:clamp(26px,4vw,36px);line-height:1.3;margin:0 0 16px;text-wrap:balance}
 .authors{font-size:17px;margin:0 0 4px}
-.affil{color:var(--muted);font-size:15px;margin:0 0 18px}
+.affil{color:var(--muted);font-size:15px;margin:0 0 22px}
 .links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.links a{font-family:var(--mono);font-size:13px;padding:7px 14px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;background:var(--surface)}
-.links a:hover{border-color:var(--acc);color:var(--acc)}
-.teaser{margin:28px 0 8px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
-.teaser img{display:block;width:100%}
-figure{margin:28px 0}
-figure img{display:block;width:100%;border:1px solid var(--line);border-radius:4px;background:#fff}
+.links a{font-family:var(--mono);font-size:13px;padding:8px 18px;border:1px solid var(--ink);border-radius:999px;color:var(--ink);text-decoration:none;background:transparent;transition:background .15s,color .15s}
+.links a:hover{background:var(--ink);color:#fff}
+.teaser{margin:36px 0 10px}
+.teaser img{display:block;width:100%;border-radius:4px}
+figure{margin:36px 0}
+figure img{display:block;width:100%}
 figcaption{font-size:14.5px;color:var(--muted);margin-top:10px;line-height:1.5}
 figcaption b{color:var(--ink)}
-h2{font-family:var(--serif);font-weight:600;font-size:24px;margin:52px 0 12px;padding-top:14px;border-top:1px solid var(--line)}
-h3{font-size:17px;font-weight:600;margin:26px 0 8px;color:var(--ink)}
+h2{font-family:var(--sans);font-weight:600;font-size:26px;margin:64px 0 20px;text-align:center}
+h3{font-size:17px;font-weight:600;margin:30px 0 10px;color:var(--ink)}
 p{margin:0 0 14px}
-.abstract{font-size:16.5px;background:var(--soft);padding:20px 24px;border-radius:6px;border-left:3px solid var(--acc)}
-.contrib{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px}
-.contrib li{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:4px;padding:14px 18px;font-size:16px}
-.contrib b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:3px}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:18px 0}
-.kv div{background:var(--surface);padding:12px 14px}
-.kv b{display:block;font-family:var(--mono);font-size:20px;font-weight:500;color:var(--acc)}
-.kv span{font-size:13px;color:var(--muted)}
-table{width:100%;border-collapse:collapse;font-size:14.5px;margin:12px 0 6px;font-variant-numeric:tabular-nums}
-th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right}
+.abstract{font-size:16.5px}
+.contrib{list-style:none;padding:0;margin:20px 0 0;display:flex;flex-direction:column;gap:14px}
+.contrib li{font-size:16px}
+.contrib b{display:block;font-family:var(--sans);font-size:16.5px;margin-bottom:3px;color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:12px 0 16px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right}
 th:first-child,td:first-child{text-align:left}
-th{font-weight:600;color:var(--muted);font-size:13px;letter-spacing:.02em;border-bottom:2px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:12.5px;letter-spacing:.02em;border-bottom:2px solid var(--line)}
 td.bad{color:var(--acc2);font-weight:600}
 td.good{color:var(--acc);font-weight:600}
-.tw{overflow-x:auto}
+.tw,.tbl{overflow-x:auto}
 /* numbered citations and the reference list */
 sup.cite{font-size:11.5px;line-height:0;vertical-align:super;white-space:nowrap;margin-left:1px}
 sup.cite a{color:var(--acc);text-decoration:none;border:0}
@@ -59,18 +56,18 @@ ol.refs li{margin:0 0 7px 0}
 ol.refs li:target{background:#fff6d8;border-radius:3px}
 ol.refs i{color:var(--ink)}
 ol.refs a{color:var(--muted);font-size:12.5px;word-break:break-all}
-.note{font-size:14.5px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:14px 0}
+.note{font-size:14.5px;color:var(--muted);margin:14px 0}
 code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:1px 5px;border-radius:3px}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13.5px;color:var(--muted);margin-top:10px}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--c)}
 pre{font-family:var(--mono);font-size:13px;background:var(--soft);padding:14px 16px;border-radius:6px;overflow-x:auto}
 h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
-.draft{background:#fdf3ee;border:1px solid #f0c9b6;border-left:3px solid var(--acc2);border-radius:6px;padding:16px 20px;margin:22px 0;font-size:15.5px}
-.draft b{display:block;font-family:var(--serif);font-size:17px;margin-bottom:4px;color:var(--ink)}
+.draft{font-size:15.5px}
+.draft b{display:block;font-family:var(--sans);font-size:17px;margin-bottom:4px;color:var(--ink)}
 .tbd{color:var(--acc2);font-style:italic;font-weight:600;font-size:.92em}
-.eq{margin:16px 0;overflow-x:auto}
-.links a.on{border-color:var(--acc);color:var(--acc);background:var(--soft)}
-.foot{color:var(--muted);font-size:13.5px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+.eq{margin:18px 0;overflow-x:auto;text-align:center}
+.links a.on{background:var(--ink);color:#fff}
+.foot{color:var(--muted);font-size:13.5px;margin-top:56px;border-top:1px solid var(--line);padding-top:16px;text-align:center}
 </style>
 </head>
 <body>
@@ -91,29 +88,22 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <h2 id="demo" style="border:0;margin-top:28px">Demo</h2>
 <figure style="margin-top:8px">
-  <video controls autoplay muted playsinline loop preload="auto" poster="assets/demo_poster.jpg" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
+  <video controls autoplay muted playsinline loop preload="auto" poster="assets/demo_poster.jpg" style="display:block;width:100%;background:#0b1417">
     <source src="assets/demo_triptych.mp4" type="video/mp4">
   </video>
-  <figcaption><b>One rally, three views.</b> <b>Left:</b> the broadcast, with the TrackNetV3 2D track coloured by stroke and both players' poses; the cross under each player is the ankle midpoint, the planar anchor of &sect;3.5. <b>Middle:</b> the reconstruction rendered through the venue's own calibrated camera, cropped to the same rectangle as the left panel, so the two can be compared directly &mdash; the court corners project to within a pixel and a half of where they appear in the video, which is the calibration of &sect;3.1 checked on the footage itself. <b>Right:</b> the same reconstruction from a free camera, which is what a monocular broadcast cannot otherwise give. Nine strokes; eight come back as flights the court permits, the ninth is a net shot the repair could not fix and is flagged rather than forced.</figcaption>
+  <figcaption><b>One rally, three views.</b> The broadcast with its 2D track and detected players (left), the reconstruction rendered through the calibrated camera (middle), and from a free viewpoint (right).</figcaption>
 </figure>
 <figure style="margin-top:14px">
-  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
+  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;background:#0b1417">
     <source src="assets/demo_overlay.mp4" type="video/mp4">
   </video>
-  <figcaption><b>The same scene composited onto the frame.</b> Court lines, net, the reconstructed flight, the shuttle and both skeletons, drawn through the fitted camera and laid over the video: court lines within 1.4&nbsp;px, the 3D shuttle within 4.1&nbsp;px of the tracked one at the median, the skeleton joints within 0.6&nbsp;px. One camera, one world frame, and every reconstruction has to project back onto the picture it came from.</figcaption>
+  <figcaption><b>The reconstruction drawn back onto the broadcast frame</b> through the calibrated camera.</figcaption>
 </figure>
 <h2 style="border:0;margin-top:28px">Abstract</h2>
 <div class="abstract">
 <p>Recovering metric 3D trajectories of fast sports projectiles from a single broadcast camera is ill-posed. Tennis and table-tennis methods resolve axial depth through <i>z</i>&nbsp;=&nbsp;0 bounce impacts, but badminton flights run racket to racket, with no contact prior. In this bounce-free regime, 2D reprojection is blind to axial depth: on a smash, trajectories differing 46-fold in 3D error (0.06&nbsp;m vs. 2.78&nbsp;m) fall within one 0.20&nbsp;px reprojection band.</p>
 <p>We introduce <b>SimTrack3D</b>, a sim-to-real framework that anchors ballistic depth to the sub-pixel precision of the ground plane, using only what a broadcast contains. A non-coplanar net-cord calibration, gated by the cord&rsquo;s invariant 26&nbsp;mm catenary sag, resolves the focal-length degeneracy. <b>Shuttle3D</b>, a ray-depth transformer trained only on 77,728 simulated flights, predicts depth along each viewing ray, conditioned on the players&rsquo; detected footwork as planar anchors. A null-space rectifier then enforces the court rules along the two weakest eigenvectors of the reprojection curvature <b>J</b><sup>&#8868;</sup><b>J</b>.</p>
 <p>On 6,553 tournament strokes, SimTrack3D returns a physically feasible flight for <b>95.9%</b> of strokes, against 20.2% for MonoTrack. On an independent ten-camera real-3D reference (2,682 held-out strokes), used only for testing, the anchor-guided network reaches a median error of <b>0.42&nbsp;m</b> (0.46&nbsp;m without anchors; three seeds), against 0.49&nbsp;m for an Uplifting-style lifter given the same data and anchors. Line-of-sight error exceeds transverse error 22-fold, and floor anchors cut gross failures (&gt;1&nbsp;m) from 23.8% to 16.1%. The observability number and the null-space projection use no badminton rule and transfer to other contact-free projectiles.</p>
-</div>
-
-<div class="kv">
-  <div><b>46&times;</b><span>3D-error spread hidden inside 0.2&nbsp;px of 2D reprojection (smash)</span></div>
-  <div><b>32</b><span>broadcast cameras measured, 19 from video alone</span></div>
-  <div><b>0%</b><span>illegal flights in the output: 95.9% of real strokes are returned, the rest are flagged</span></div>
-  <div><b><i>N</i><sup>&minus;0.98</sup></b><span>Cram&eacute;r&ndash;Rao bound vs. the image-only observability number</span></div>
 </div>
 
 <h2 id="intro">1. Introduction</h2>
@@ -129,10 +119,10 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <figure>
   <img src="assets/fig_identifiability.png" alt="Profile likelihood of 2D reprojection residual and true 3D error against assumed launch height, clear versus smash, and the viewing-ray ambiguity cone of a smash with the camera frustum">
-  <figcaption><b>Figure 1 &mdash; The Reprojection Fallacy: identical 2D projections hide 6.2&nbsp;m of 3D depth ambiguity.</b> <b>(a,&nbsp;b)</b> Profile likelihoods: launch height <i>z</i><sub>0</sub> is fixed and the remaining parameters are fitted against noisy 2D tracks (&sigma;&nbsp;=&nbsp;2&nbsp;px). For a high-curvature <i>clear</i> (a), the 2D reprojection error has a well-conditioned minimum at the true height. For an axial <i>smash</i> (b), candidate trajectories whose true 3D error spans 0.06&nbsp;m to 2.78&nbsp;m &mdash; a 46-fold spread &mdash; sit within a 0.20&nbsp;px reprojection band, well beneath detector jitter. <b>(c,&nbsp;d)</b> The ambiguity is exactly a cone about the line of sight, drawn for one measured broadcast camera (<i>f</i>&nbsp;=&nbsp;1623&nbsp;px, 16.7&nbsp;m from court centre). (c) Top view at true scale: grey lines are viewing rays converging on the camera, which sits off the left edge; the dashed lines are the edges of its horizontal field of view. Scaling a real smash by &times;0.85 (red) and &times;1.15 (blue) along its own viewing rays moves it <b>6.2&nbsp;m</b> in 3D at the racket (arrows) and 4.0&nbsp;m where the stroke ends. (d) Through the same camera (inset: zoom on the projected tracks) the three flights differ on the image by at most <b>1.1&times;10<sup>&minus;13</sup>&nbsp;px</b> &mdash; thirteen orders of magnitude below the &asymp;2&nbsp;px noise of the detector that produced the track. No reprojection-based criterion, at any noise level, can separate them.</figcaption>
+  <figcaption><b>Figure 1 &mdash; The Reprojection Fallacy: identical 2D projections hide 6.2&nbsp;m of 3D depth ambiguity.</b> (a,&nbsp;b) Reprojection error versus 3D error as the launch height is varied, for a clear and a smash. (c) A smash scaled along its viewing rays (top view). (d) The three flights as the camera sees them.</figcaption>
 </figure>
 
-<p><b>The reprojection fallacy.</b> Due to the absence of dense 3D ground truth in sports broadcasts, prior literature frequently validates reconstructions via 2D reprojection residuals, or via plausibility heuristics such as net clearance or landing within the venue. As formalized in Figure&nbsp;1, reprojection error is structurally uninformative on high-speed axial trajectories. A continuous family of candidate trajectories scaling along their own viewing rays forms an <i>ambiguity cone</i>: scaling a real smash along its viewing rays moves it 6.2&nbsp;m in 3D at the racket and 4.0&nbsp;m at arrival, while differing on the image plane by at most 1.1&times;10<sup>&minus;13</sup>&nbsp;px &mdash; thirteen orders of magnitude below visual detector jitter (&asymp;2&nbsp;px). Candidate trajectories exhibiting a <b>46-fold</b> discrepancy in 3D error (0.06&nbsp;m vs. 2.78&nbsp;m) sit within an indistinguishable 0.20-pixel reprojection band. Reprojection residuals alone are structurally blind to line-of-sight depth errors, and a better detector narrows that blindness only slowly (&sect;4).</p>
+<p><b>The reprojection fallacy.</b> Due to the absence of dense 3D ground truth in sports broadcasts, prior literature frequently validates reconstructions via 2D reprojection residuals, or via plausibility heuristics such as net clearance or landing within the venue. As formalized in Figure&nbsp;1, reprojection error is structurally uninformative on high-speed axial trajectories. Fixing the launch height and refitting the rest of the flight to a noisy track (&sigma;&nbsp;=&nbsp;2&nbsp;px), a clear has a sharp reprojection minimum at the true height, while a smash does not (Figure&nbsp;1a,&nbsp;b). A continuous family of candidate trajectories scaling along their own viewing rays forms an <i>ambiguity cone</i>: scaling a real smash along its viewing rays moves it 6.2&nbsp;m in 3D at the racket and 4.0&nbsp;m at arrival, while differing on the image plane by at most 1.1&times;10<sup>&minus;13</sup>&nbsp;px &mdash; thirteen orders of magnitude below visual detector jitter (&asymp;2&nbsp;px). Candidate trajectories exhibiting a <b>46-fold</b> discrepancy in 3D error (0.06&nbsp;m vs. 2.78&nbsp;m) sit within an indistinguishable 0.20-pixel reprojection band. Reprojection residuals alone are structurally blind to line-of-sight depth errors, and a better detector narrows that blindness only slowly (&sect;4).</p>
 <p><b>Core intuition: anchoring depth to the floor.</b> While a single broadcast view cannot resolve depth along a viewing ray, it measures the planar court markings with sub-pixel precision. Furthermore, every stroke in a rally starts and ends at a player standing on this floor: the hitter at launch and the receiver at arrival, both visible in the broadcast. A pose detector locates their feet, the court calibration maps the feet to metres, and these <i>floor anchors</i> fix where along each viewing ray the flight must begin and end. The elevated net cord, the one court structure above the floor, calibrates the camera&rsquo;s focal length.</p>
 <p>In this work, we present <b>SimTrack3D</b>, a sim-to-real framework that reconstructs metric 3D shuttle trajectories from single-camera broadcast video; its depth network is called <b>Shuttle3D</b>. Our contributions are:</p>
 <ul class="contrib">
@@ -153,6 +143,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <h2 id="method">3. Methodology</h2>
 
+<p><b>Pipeline.</b> Figure&nbsp;2 shows the system. A broadcast gives a 2D shuttle track and the players&rsquo; poses (a). The court lines and the elevated net cord calibrate the camera, and the cord&rsquo;s withheld sag accepts or rejects the calibration (b; &sect;3.1). Each detection becomes a viewing ray, and the detected feet of the hitter and receiver become floor anchors (c; &sect;3.5). Shuttle3D, the only learned component, predicts depth along each ray from these inputs (d; &sect;3.3); it is trained only on flights simulated by aerodynamic boundary-value problems anchored to real tournament strokes (h; &sect;3.2). A rectifier fits a launch state and projects it onto the court rules along the directions the image cannot see (e; &sect;3.4), leave-one-anchor-out tests consistency with the floor (f), and the output is a metric flight in the court frame, or a flagged stroke (g).</p>
 <h3>3.1 Sag-gated non-coplanar calibration</h3>
 <p>Let <b>X</b>&nbsp;=&nbsp;[<i>X</i>,&nbsp;<i>Y</i>,&nbsp;<i>Z</i>]<sup>&#8868;</sup> denote a 3D coordinate in the canonical court frame, where the court floor lies on <i>Z</i>&nbsp;=&nbsp;0. Coplanar court line markings provide an 8-DoF homography</p>
 <div class="eq">$$\mathbf{u} \sim \mathbf{H}\,[X, Y, 1]^{\top},$$</div>
@@ -160,7 +151,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <figure>
   <img src="assets/fig_method.png" alt="Overview of the SimTrack3D framework in eight panels">
-  <figcaption><b>Figure 2 &mdash; Overview of the SimTrack3D Framework.</b> (a) Broadcast video with 2D projectile tracks and detected human poses. (b) Non-coplanar calibration: court lines and the elevated catenary net cord jointly determine camera extrinsics and focal length; the cord's &Delta;<i>z</i>&nbsp;=&nbsp;26&nbsp;mm sag is withheld from the fit and used only as the acceptance gate. (c) Ray parameterization: pixel tracks are mapped to unit viewing rays and floor intersections, together with the spatiotemporal planar anchors. (d) Tier 1 (Shuttle3D): a ray-depth transformer estimates metric depth along each ray, with the anchors entering its global token. (e) Tier 2 (Rectifier): an aerodynamic launch state is fitted and projected onto the admissible physical set along the two weakest eigenvectors of reprojection curvature; the set is defined by the court rules alone. (f) Leave-one-anchor-out evaluation: each anchor is withheld in turn and predicted, as a consistency check against annotated floor positions. (g) Reconstructed metric 3D flight and players in the calibrated world court frame. (h) Synthetic supervision, the only thing panel&nbsp;d ever sees. <b>Background bands group the stages:</b> geometric calibration and feature extraction (a&ndash;c, analytic), the learned Shuttle3D core (d, with its synthetic supervision h), and null-space constraints and post-processing (e&ndash;g, optimization). <b>Border style carries information:</b> a <b>solid border marks the one trainable, back-propagated block</b> &mdash; panel&nbsp;d, Shuttle3D, 2.70&nbsp;M parameters &mdash; while a <b>dashed border marks analytic or physics-solver stages that carry no learned weights</b>. Calibration, ray geometry, boundary-value synthesis, the rectifier and the evaluation are solved, not fitted; the learned component is deliberately confined to the one place where the image genuinely underdetermines the answer.</figcaption>
+  <figcaption><b>Figure 2 &mdash; Overview of SimTrack3D.</b> Calibration and ray geometry (a&ndash;c), the learned Shuttle3D network and its synthetic supervision (d,&nbsp;h), and null-space rectification, evaluation and output (e&ndash;g). Only panel&nbsp;d has trainable weights.</figcaption>
 </figure>
 
 <p>To resolve this degeneracy, we incorporate the elevated badminton net cord as a metric non-coplanar reference. Under Badminton World Federation (BWF) specifications, the cord is suspended at post height <i>H<sub>p</sub></i>&nbsp;=&nbsp;1.55&nbsp;m and sags under gravity to <i>H<sub>c</sub></i>&nbsp;=&nbsp;1.524&nbsp;m at court center across width <i>L</i>&nbsp;=&nbsp;6.10&nbsp;m. In net-aligned coordinates, the cord profile follows a catenary:</p>
@@ -206,12 +197,12 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <figure>
   <img src="assets/fig_nullspace.png" alt="Reprojection cost and the feasible set over the two least-constrained directions of the launch state, and the two resulting flights in elevation">
-  <figcaption><b>Figure 3 &mdash; Null-Space Projection on the Weakest Curvature Eigenvectors.</b> One real broadcast stroke, 28 tracked frames. <b>(a)</b> Reprojection RMS over the plane spanned by <b>v</b><sub>5</sub> and <b>v</b><sub>6</sub>, the two weakest eigenvectors of <b>J</b><sup>&#8868;</sup><b>J</b>: a broad, shallow basin, the line-of-sight depth degeneracy made visible. <b>(b)</b> The admissible set on the same plane (shaded; 23.8% of the plane shown), bounded by the court rules &mdash; among them net clearance <i>z</i>&nbsp;&ge;&nbsp;<i>H</i><sub>cord</sub>(<i>x</i>)&nbsp;+&nbsp;0.02&nbsp;m. The unconstrained optimum (circle) lies outside it; the rectifier moves it into the admissible set (star). <b>(c)</b> The two flights in elevation along the court: the unconstrained fit crosses the net plane at 0.96&nbsp;m, beneath the cord; the projected flight crosses at 1.54&nbsp;m, on the clearance boundary just above the tape, while its reprojection RMS rises from 7.21 to 7.37&nbsp;px &mdash; by 0.16&nbsp;px. Grey segments are the camera&rsquo;s viewing rays through six tracked frames: the correction slides the flight along them, which is why the image barely registers a change of more than half a metre at the net.</figcaption>
+  <figcaption><b>Figure 3 &mdash; Null-space projection on one broadcast stroke.</b> (a) Reprojection error over the plane of the two weakest eigenvectors of <b>J</b><sup>&#8868;</sup><b>J</b>. (b) The physically admissible region of that plane. (c) The unconstrained and projected flights near the net, with viewing rays in grey.</figcaption>
 </figure>
 
 <p><b>Projection along weak observability directions.</b> If the unconstrained fit violates physical bounds, optimization steps are restricted strictly to the 2D subspace spanned by the two eigenvectors [<b>v</b><sub>5</sub>,&nbsp;<b>v</b><sub>6</sub>] corresponding to the smallest eigenvalues of the Gauss&ndash;Newton reprojection curvature matrix <b>J</b><sup>&#8868;</sup><b>J</b>:</p>
 <div class="eq">$$\mathbf{s}_0^{(k+1)} = \mathbf{s}_0^{(k)} + \alpha_1 \mathbf{v}_5 + \alpha_2 \mathbf{v}_6.$$</div>
-<p>As illustrated in Figure&nbsp;3, this subspace represents line-of-sight depth degeneracy where metric adjustments incur negligible reprojection penalties (observed on 6,553 real strokes: median cost 0.00&nbsp;px, 90th percentile 0.76&nbsp;px). Strokes that cannot achieve physical feasibility within a residual budget (&Delta;<sub>budget</sub>&nbsp;=&nbsp;14.0&nbsp;px) are explicitly flagged as unfixable outliers rather than hallucinated. The projection buys feasibility, not accuracy; &sect;5.4 measures its cost against real 3D. Every rectifier number reported in this paper uses one configuration: four restarts of the constrained solver from distinct initialisations, followed by a feasibility bisection, with the returned flight re-integrated in double precision and re-checked against every rule before it is emitted.</p>
+<p>As illustrated in Figure&nbsp;3 on one broadcast stroke, this subspace represents line-of-sight depth degeneracy where metric adjustments incur negligible reprojection penalties: the unconstrained fit crosses the net plane at 0.96&nbsp;m, beneath the cord, and the projected flight crosses at 1.54&nbsp;m, while its reprojection error rises only from 7.21 to 7.37&nbsp;px, because the correction slides the flight along the viewing rays. Across strokes, the cost is similarly small (observed on 6,553 real strokes: median cost 0.00&nbsp;px, 90th percentile 0.76&nbsp;px). Strokes that cannot achieve physical feasibility within a residual budget (&Delta;<sub>budget</sub>&nbsp;=&nbsp;14.0&nbsp;px) are explicitly flagged as unfixable outliers rather than hallucinated. The projection buys feasibility, not accuracy; &sect;5.4 measures its cost against real 3D. Every rectifier number reported in this paper uses one configuration: four restarts of the constrained solver from distinct initialisations, followed by a feasibility bisection, with the returned flight re-integrated in double precision and re-checked against every rule before it is emitted.</p>
 <p><b>Why a rectifier that does not improve accuracy.</b> Metric accuracy and physical validity are different requirements. For sports analytics and broadcast graphics, a flight that passes under the net, through the floor or out of the hall is a catastrophic semantic failure: it corrupts rally statistics and net-clearance measurements and breaks any rendered replay, however small its metric error. The rectifier is a safety valve against such failures, not an accuracy component. It moves an estimate only along the directions the image cannot see, at a median reprojection cost of 0&nbsp;px, and it flags what it cannot repair. Against real 3D it costs 1&ndash;3&nbsp;cm with a tight prior and 9&ndash;16&nbsp;cm with the looser deployed prior (&sect;5.4, Table&nbsp;2); in exchange, no emitted flight violates a court rule. Accuracy is therefore reported for the Tier-1 network, and feasibility for the full pipeline.</p>
 
 <h3>3.5 Spatiotemporal planar anchors</h3>
@@ -241,7 +232,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 
 <figure>
   <img src="assets/fig_observability.png" alt="Cramer-Rao bound against the observability number N on a log-log scale">
-  <figcaption><b>Figure 4 &mdash; The observability number <i>N</i> predicts the estimation bound.</b> Across 7,994 synthetic strokes anchored to real tournament events, the theoretical CRLB follows CRLB&nbsp;&prop;&nbsp;<i>N</i><sup>&minus;0.98</sup> (R&sup2;&nbsp;=&nbsp;0.83, Spearman &rho;&nbsp;=&nbsp;&minus;0.92). On high-<i>N</i> strokes (clears, lifts), Shuttle3D's error sits above the CRLB, where an unbiased estimator's must sit. On low-<i>N</i> strokes (smashes, drives), it falls below the unbiased bound by up to 4.6&times;: not a violated bound, but a biased estimator regressing toward its learned tactical prior where the image carries too little information. The dashed marker at <i>N</i>&nbsp;&asymp;&nbsp;17 is where, on held-out synthetic strokes, the model&rsquo;s error falls below the bound: to its left the answer is prior-dominated, to its right image-dominated.</figcaption>
+  <figcaption><b>Figure 4 &mdash; The observability number <i>N</i> predicts the estimation bound</b> (7,994 synthetic strokes; stroke-type medians labelled).</figcaption>
 </figure>
 
 <h3>4.3 Fisher information and the Cram&eacute;r&ndash;Rao bound</h3>
@@ -274,16 +265,15 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <tr><td>EKF + RTS smoother</td><td>own run &cap; certified</td><td>958</td><td>3.09</td><td>14.10</td><td>13.8%</td></tr>
 <tr><td>Iterated EKF</td><td>own run &cap; certified</td><td>958</td><td>2.64</td><td>14.19</td><td>25.1%</td></tr>
 <tr><td>Batch MAP</td><td>own run &cap; certified</td><td>958</td><td>2.55</td><td>12.66</td><td>25.4%</td></tr>
-<tr><td>Shuttle3D, Tier&nbsp;1 only (earlier generation)</td><td>all, own output</td><td>5,622</td><td>0.92</td><td>4.44</td><td>76.9%</td></tr>
 <tr><td><b>SimTrack3D</b></td><td>certified subset</td><td>5,480</td><td class="good"><b>0.60</b></td><td>2.63</td><td>100%</td></tr>
 <tr><td><b>SimTrack3D</b></td><td><b>all, own output</b></td><td>5,622</td><td class="good"><b>0.61</b></td><td>2.87</td><td class="good"><b>97.5%</b></td></tr>
 <tr><td><b>SimTrack3D</b></td><td>all, 7.35&nbsp;m penalty</td><td>5,622</td><td class="good"><b>0.62</b></td><td>3.15</td><td class="good">97.5%</td></tr>
 </table></div>
 <p>As Table&nbsp;1 shows, unconstrained optimization fails on real tournament footage: MonoTrack returns a physically possible flight on 20.2% of the common set (18.3% of its full 6,914-stroke run) with a median arrival error of 3.08&nbsp;m. The classical estimators are not straw men. On 400 synthetic strokes batch MAP reaches 0.317&nbsp;m and is more accurate than Shuttle3D on the two highest-<i>N</i> stroke types (lift 0.136 vs. 0.279&nbsp;m, clear 0.139 vs. 0.309&nbsp;m), as an efficient unbiased estimator should be when the image is informative; on smashes, where <i>N</i> collapses, it degrades to 1.264&nbsp;m against 0.229&nbsp;m for Shuttle3D (synthetic).</p>
-<p><b>Every stroke is scored.</b> To rule out sample-selection bias, Table&nbsp;1 rescores every method on the 5,622 strokes of the common intersection that carry an arrival annotation under three protocols. Our feasibility flag marks a stroke rather than deleting it, so a full-sample number exists: keeping the flagged strokes' own output moves our median from 0.60&nbsp;m (certified subset) to 0.61&nbsp;m, and charging every flagged stroke a harsh 7.35&nbsp;m moves it to 0.62&nbsp;m. The gate (96.0% of all 6,553 strokes, 97.5% of this set) is worth 1&ndash;2&nbsp;cm, not the gap to the baselines. The same penalty applied to MonoTrack's physically impossible strokes, 79.8% of the set, puts its median at the penalty value itself. Figure&nbsp;5 grants every method the same right to abandon: rejecting strokes by each method's own unconstrained physics-fit residual, MonoTrack falls from 3.08&nbsp;m at full coverage to 2.01&nbsp;m at 50% and 1.62&nbsp;m at 20% (its own possibility flag), and at no coverage down to 20% does it reach the 0.61&nbsp;m SimTrack3D attains at 100%. The Tier-1-only row of Table&nbsp;1 is an earlier network generation; the EKF-family rows come from their own 1,200-stroke run and are not row-comparable. The full protocol analysis, the leave-one-anchor-out evaluation on 6,553 strokes and the net-cord clearance diagnostic are in Supp.&nbsp;&sect;S4&ndash;S6.</p>
+<p><b>Every stroke is scored.</b> To rule out sample-selection bias, Table&nbsp;1 rescores every method on the 5,622 strokes of the common intersection that carry an arrival annotation under three protocols. Our feasibility flag marks a stroke rather than deleting it, so a full-sample number exists: keeping the flagged strokes' own output moves our median from 0.60&nbsp;m (certified subset) to 0.61&nbsp;m, and charging every flagged stroke a harsh 7.35&nbsp;m moves it to 0.62&nbsp;m. The gate (96.0% of all 6,553 strokes, 97.5% of this set) is worth 1&ndash;2&nbsp;cm, not the gap to the baselines. The same penalty applied to MonoTrack's physically impossible strokes, 79.8% of the set, puts its median at the penalty value itself. Figure&nbsp;5 grants every method the same right to abandon, with oracle rejection (by true error, unavailable at inference) and random rejection as bounds: rejecting strokes by each method's own unconstrained physics-fit residual, MonoTrack falls from 3.08&nbsp;m at full coverage to 2.01&nbsp;m at 50% and 1.62&nbsp;m at 20% (its own possibility flag), and at no coverage down to 20% does it reach the 0.61&nbsp;m SimTrack3D attains at 100%. The EKF-family rows come from their own 1,200-stroke run and are not row-comparable. The full protocol analysis, the leave-one-anchor-out evaluation on 6,553 strokes and the net-cord clearance diagnostic are in Supp.&nbsp;&sect;S4&ndash;S6.</p>
 <figure>
   <img src="assets/fig_coverage.png" alt="Coverage-error curves for SimTrack3D and MonoTrack under the same right to abandon">
-  <figcaption><b>Figure 5 &mdash; The same right to abandon, given to everyone.</b> Arrival error against the annotated receiver position as strokes are rejected by an inference-time score that uses no annotation, sweeping coverage from 100% downwards: <b>(a)</b> median, <b>(b)</b> tail (p90). Rejection is by each method's own unconstrained physics-fit residual. The oracle curve (rejecting by true error, unavailable at inference) bounds each method from below and random rejection from above, so the reader can separate real selection from mere sample shrinkage. The two operating points actually used in the paper &mdash; our feasibility flag at 97.5% coverage and MonoTrack's physical-possibility flag at 20.2% &mdash; are marked, not interpolated. MonoTrack does not reach SimTrack3D's full-coverage error at any coverage.</figcaption>
+  <figcaption><b>Figure 5 &mdash; The same right to abandon, given to every method.</b> Arrival consistency as strokes are rejected by each method&rsquo;s own physics-fit residual: (a) median, (b) 90th percentile.</figcaption>
 </figure>
 
 <h3>5.3 Representation ablation</h3>
@@ -303,23 +293,23 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <tr><td>Full estimator (Tier&nbsp;1+2)</td><td>0.265</td><td>0.618</td><td>2.3&times;</td><td class="good">100%</td><td class="good">100%</td><td>0.652 / 0.035</td></tr>
 </table></div>
 <div class="tw"><table>
-<tr><th colspan="7"><b>Table 3 &mdash; Monocular reconstruction against real 3D, 2,682 held-out strokes from 7 capture sessions.</b> the 2,682 held-out strokes from 7 capture sessions. The 2D track is the reference flight seen through a measured broadcast camera. Where stated, foot anchors are simulated at detector quality: the reference player&rsquo;s ground position plus a residual drawn from 7,763 measured residuals of the broadcast pose pipeline on ShuttleSet (median 0.76&nbsp;m, wrong-player picks included), with 5.2% of anchors dropped as undetected. The reference has video for only one rally, so a detector cannot be run on it. The hitter and receiver are taken as the players nearest the reference shuttle at the first and last tracked frames, which stands in for the stroke-order assignment a broadcast pipeline makes; the residual pool includes that pipeline&rsquo;s wrong-player picks. Apart from these corrupted player positions, no reference quantity (skeleton, launch height, shuttle position) enters any model. The Uplifting-style lifter receives the same anchor values without the declared-uncertainty channel, which it does not have. Without anchors, single-seed differences lie inside a 0.040&nbsp;m seed-to-seed spread, so those rows use three seeds of each model. The last row is a supervised upper bound trained on real 3D labels; it is not part of the system, and every other result in this paper uses no real 3D label.</th></tr>
+<tr><th colspan="7"><b>Table 3 &mdash; Monocular reconstruction against real 3D</b> (2,682 held-out strokes from 7 sessions; median error in m). Foot anchors are simulated at detector-level error (&sect;5.4). The last row is a supervised upper bound, not part of the system.</th></tr>
 <tr><th>Model (2,682 strokes)</th><th>No anchors (m)</th><th>+ foot anchors, detector-level (m)</th><th>&gt;1&nbsp;m, none</th><th>&gt;1&nbsp;m, feet</th><th>&gt;2&nbsp;m, none &rarr; feet</th><th>Depth reversals, none &rarr; feet</th></tr>
 <tr><td><b>Shuttle3D, final model</b>, three seeds (mean [range])</td><td>0.463 [0.459&ndash;0.466]</td><td class="good"><b>0.424</b> [0.417&ndash;0.432]</td><td>23.8%</td><td class="good"><b>16.1%</b></td><td>10.0% &rarr; <b>4.1%</b></td><td>10.4% &rarr; <b>2.6%</b></td></tr>
 <tr><td>Uplifting-style lifter + the same anchors (seed&nbsp;0)</td><td>0.588</td><td class="bad">0.493</td><td>31.3%</td><td>22.1%</td><td>14.0% &rarr; 8.1%</td><td>10.0% &rarr; 3.5%</td></tr>
-<tr><td>Shuttle3D, earlier generation, no anchors, three seeds (mean [range])</td><td>0.484 [0.468&ndash;0.508]</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
 <tr><td>Uplifting-style lifter, three seeds (mean [range])</td><td class="bad">0.594 [0.581&ndash;0.608]</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
 <tr><td><i>Upper bound: fine-tuned on real 3D (not part of the system)</i></td><td><i>0.320</i></td><td>&mdash;</td><td><i>13.9%</i></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
 </table></div>
+<p><b>Test protocol.</b> The 2D track is the reference flight seen through one of our measured broadcast cameras. The reference has video for only one rally, so a pose detector cannot be run on it; foot anchors are therefore simulated at detector quality: the reference player&rsquo;s ground position plus a residual drawn from 7,763 measured residuals of the broadcast pose pipeline on ShuttleSet (median 0.76&nbsp;m, wrong-player picks included), with 5.2% of anchors dropped as undetected. The hitter and receiver are the players nearest the reference shuttle at the first and last tracked frames, standing in for the stroke-order assignment a broadcast pipeline makes. Apart from these corrupted player positions, no reference quantity enters any model. The Uplifting-style lifter receives the same anchor values without the declared-uncertainty channel, which it does not have. Without anchors, single-seed differences lie inside a 0.040&nbsp;m spread, so those rows report three seeds.</p>
 <p><b>The synthetic-to-real gap.</b> On 400 synthetic and 400 reference strokes run through one script (Table&nbsp;2), synthetic evaluation understates real 3D error for every non-trivial method: by 1.7&times; for Shuttle3D, 2.5&times; for MonoTrack and 2.9&times; for the physics fit. The ranking changes with it: the physics prior that is the best synthetic cell (0.255&nbsp;m) loses to Tier&nbsp;1 alone on real flights (0.632 vs. 0.530&nbsp;m). Physical plausibility does not guarantee metric accuracy: the constrained estimator is feasible on 100% of real flights yet 0.618&nbsp;m from the reference at the median. Shuttle3D's 0.530&nbsp;m is 1.15&times; the median CRLB of 0.460&nbsp;m computed over 3,000 reference strokes.</p>
 <p><b>Error decomposition.</b> The residual is 22&times; larger along the viewing ray than across it (0.585 vs. 0.026&nbsp;m), and every method shows the same signature: given the 2D track, calibration is not the bottleneck, depth is, as &sect;4 predicts. (The 2D tracks in this test are the reference flights projected with 2&nbsp;px noise; &sect;5.5 tests frame loss, but real tracker noise is not tested on the reference.) On the 2,682 held-out strokes (Table&nbsp;3), foot anchors at detector quality move the final model from 0.463 to 0.424&nbsp;m (three seeds). The larger effect is on failures: strokes more than 1&nbsp;m wrong fall from 23.8% to 16.1%, strokes more than 2&nbsp;m wrong from 10.0% to 4.1%, and depth reversals &mdash; a flight reconstructed as approaching the camera while it recedes &mdash; from 10.4% to 2.6%. The anchors correct the level of the depth, which is the direction the image cannot see. How much they can correct is set by the detector: &sect;5.5 injects additional anchor error and finds the point at which an anchor stops helping. Enforcing the court rules through Tier&nbsp;2 does not improve accuracy against the reference: with the prior used in deployment it costs 9&ndash;16&nbsp;cm (Table&nbsp;2; Supp.&nbsp;&sect;S8.5), and 1&ndash;3&nbsp;cm with a tight prior. The rectifier buys feasibility, not accuracy, which is why the accuracy figures in this section are those of the Tier-1 network.</p>
-<p><b>Learned sim-to-real baselines.</b> We re-implemented two learned lifters on our training data, cameras and noise model, changing only representation and output: an Uplifting-style lifter (pixels, court and net-post keypoints, per-frame 3D output) and a TrajTrans-style lifter (pixels and court corners regressed to launch parameters). Against the reference, the Uplifting-style lifter is 0.594&nbsp;m from the real flight over three seeds, against 0.484&nbsp;m for an earlier Shuttle3D; given the same detector-grade foot anchors it reaches 0.493&nbsp;m against 0.424&nbsp;m for the final Shuttle3D, with gross failures of 22.1% against 16.1% (Table&nbsp;3). The TrajTrans-style variants reach 0.574&ndash;0.582&nbsp;m. Allowing the network to leave its viewing ray &mdash; the unconstrained 3D output these lifters use &mdash; improves agreement with 2D projections and with ShuttleSet&rsquo;s player-position annotations, but costs metric accuracy against the real 3D reference (Supp.&nbsp;&sect;S2.3).</p>
+<p><b>Learned sim-to-real baselines.</b> We re-implemented two learned lifters on our training data, cameras and noise model, changing only representation and output: an Uplifting-style lifter (pixels, court and net-post keypoints, per-frame 3D output) and a TrajTrans-style lifter (pixels and court corners regressed to launch parameters). Against the reference, the Uplifting-style lifter is 0.594&nbsp;m from the real flight over three seeds, against 0.463&nbsp;m for Shuttle3D (three seeds each); given the same detector-grade foot anchors it reaches 0.493&nbsp;m against 0.424&nbsp;m for the final Shuttle3D, with gross failures of 22.1% against 16.1% (Table&nbsp;3). The TrajTrans-style variants reach 0.574&ndash;0.582&nbsp;m. Allowing the network to leave its viewing ray &mdash; the unconstrained 3D output these lifters use &mdash; improves agreement with 2D projections and with ShuttleSet&rsquo;s player-position annotations, but costs metric accuracy against the real 3D reference (Supp.&nbsp;&sect;S2.3).</p>
 <p><b>Checking the simulator.</b> The reference also allows the simulator&rsquo;s drag law to be refitted to real flight (terminal velocity 6.04&nbsp;m/s instead of 6.8). Retraining on the refitted law does not change the monocular error, which is bounded by depth observability rather than aerodynamic fidelity, and the final system keeps the canonical law (Supp.&nbsp;&sect;S8.2).</p>
 
 <h3>5.5 Stress testing: airborne smashes and frame drops</h3>
 <p><b>Airborne jump smashes.</b> The floor anchors come from the players&rsquo; feet, but a smash is struck in mid-air. On the 2,682 held-out reference strokes we measure lift as the hitter&rsquo;s pelvis height at contact minus that player&rsquo;s standing baseline in the rally. Jumping does not move the player away from the shuttle in the horizontal plane: the player-to-shuttle distance at contact is 1.21&nbsp;m for grounded strokes and 0.78&nbsp;m for airborne ones (lift &gt;&nbsp;0.15&nbsp;m), and it falls monotonically across lift quartiles from 1.37 to 0.78&nbsp;m (correlation &minus;0.48), because a player jumping to smash gets underneath the shuttle. With detector-grade anchors the final model improves on both groups: airborne strokes go from 0.516 to 0.487&nbsp;m and grounded ones from 0.448 to 0.395&nbsp;m (Table&nbsp;4, top). Airborne strokes carry more error with or without anchors, so the difference comes from the stroke types &mdash; short, low-<i>N</i> arcs &mdash; rather than from the anchor. On 6,553 broadcast strokes the real pose detector does degrade on smash, tap smash and net kill (1.05 vs. 0.76&nbsp;m from the annotated player position), because a jumping player&rsquo;s ankles leave the floor; the anchor enters Tier&nbsp;1 as a soft token with a declared uncertainty, not as a constraint, so a worse anchor is trusted less rather than enforced (Supp.&nbsp;&sect;S9).</p>
 <div class="tw"><table>
-<tr><th colspan="6"><b>Table 4 &mdash; Airborne strokes and input degradation, on real 3D.</b> 2,682 held-out multi-view strokes, final model; median over strokes of the per-stroke median 3D error, in metres, with the share of strokes more than 1&nbsp;m wrong. Anchors are simulated at a broadcast pose detector&rsquo;s measured error level (&sect;5.4), seed&nbsp;0; no launch height or shuttle position is given to the model. The residuals are drawn from all stroke types, so the airborne rows do not reproduce the detector&rsquo;s extra error on jumping players (1.05 vs. 0.76&nbsp;m on broadcast); the anchor-noise rows below bound that effect. <i>Top</i>: <i>Player dist.</i> is the hitter&rsquo;s horizontal distance to the shuttle at contact. <i>Bottom</i>: inputs degraded at inference. Frame loss is on top of the tracker&rsquo;s own dropouts (median 29 frames retained at 0%, 21 at 30%, 15 at 50%). Anchor noise is added on top of the detector-level error; <i>declared</i>: the anchor token&rsquo;s stated &sigma; is widened with it; <i>silent</i>: it is not.</th></tr>
+<tr><th colspan="6"><b>Table 4 &mdash; Airborne strokes and input degradation on real 3D</b> (2,682 held-out strokes; median error in m, share &gt;1&nbsp;m in brackets). Anchors are simulated at detector-level error.</th></tr>
 <tr><th>Group</th><th><i>n</i></th><th>Player dist.</th><th>Lift</th><th>No anchors</th><th>Foot anchors</th></tr>
 <tr><td>Airborne (lift&nbsp;&gt;&nbsp;0.15&nbsp;m)</td><td>754</td><td class="good">0.78&nbsp;m</td><td>0.22&nbsp;m</td><td>0.516 (28.5%)</td><td><b>0.487</b> (19.8%)</td></tr>
 <tr><td>Grounded</td><td>1,928</td><td>1.21&nbsp;m</td><td>&minus;0.01&nbsp;m</td><td>0.448 (22.8%)</td><td><b>0.395</b> (14.8%)</td></tr>
@@ -600,13 +590,13 @@ where the shuttle was.</p>
 <p>Feet anchors cut the error from 0.508&nbsp;m to 0.358&nbsp;m (&minus;30%) and, more importantly, cut gross failures: strokes worse than 1&nbsp;m fall from 26.7% to 8.5%, depth-profile reversals from 10.8% to 1.4%. Supplying only the launch-side anchor gives 0.434&nbsp;m and only the arrival-side anchor 0.379&nbsp;m, so both ends carry information and the arrival end carries more. Replacing the pelvis with a truth-grade anchor gives 0.315&nbsp;m, which bounds what better pose estimation can buy. The effect composes with supervision rather than substituting for it: on the fine-tuned model the same anchors give 0.320&nbsp;&rarr;&nbsp;0.263&nbsp;m, a comparable relative gain on a much stronger starting point, so prior quality and anchor quality are close to independent contributions. A representative 21-stroke rally shows the mechanism concretely: its worst stroke goes from 5.08&nbsp;m to 1.38&nbsp;m with feet anchors, 0.94&nbsp;m once the launch height is added and 0.55&nbsp;m with truth-grade anchors, while the depth-scale error on that stroke falls from 14.8% to 3.7% and then to 1.7%.</p>
 
 <figure style="margin-top:14px">
-  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
+  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;background:#0b1417">
     <source src="assets/mv_rally_v8_feet.mp4" type="video/mp4">
   </video>
   <figcaption><b>A whole held-out rally against the multi-view 3D reference.</b> Rally 250111_1/1_05_05, 21 strokes, seen through one measured broadcast camera. Cyan: the multi-view reference. Orange: Shuttle3D with the two real foot anchors (green disc: striker, magenta disc: receiver). The red bar is the 3D gap at the current frame. Per-stroke median 0.20&nbsp;m with anchors, 0.29&nbsp;m without; each stroke's tube retracts as the next begins.</figcaption>
 </figure>
 <figure style="margin-top:14px">
-  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
+  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;background:#0b1417">
     <source src="assets/mv_truth_vs_ours.mp4" type="video/mp4">
   </video>
   <figcaption><b>Without anchors, four strokes of the same rally.</b> Almost exact (0.06&nbsp;m), typical (0.38&nbsp;m), drifting (1.05&nbsp;m) and a failure (5.54&nbsp;m). The failure keeps the right shape and lies on the right line of sight; it is pushed 15% too far along it. That stroke flies within 11&deg; of the line of sight. With the real foot anchors it comes back to 1.38&nbsp;m.</figcaption>
@@ -763,7 +753,7 @@ recoveries, where the L2 prior instead pays for pixels with implausible joint co
 </figure>
 
 <figure>
-  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;border:1px solid var(--line);border-radius:6px;background:#0b1417">
+  <video controls muted playsinline loop preload="metadata" style="display:block;width:100%;background:#0b1417">
     <source src="assets/sim_twin_vs_real.mp4" type="video/mp4">
   </video>
   <figcaption><b>Figure S7 &mdash; A rendered reconstruction of a real rally segment, beside the footage it
