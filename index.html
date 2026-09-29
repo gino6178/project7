@@ -227,7 +227,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <p><i>N</i> registers the magnitude of projected dynamic curvature relative to tracking uncertainty. As <i>N</i>&nbsp;&rarr;&nbsp;0, the observed track becomes indistinguishable from an unaccelerated ray and metric ballistic depth becomes unobservable.</p>
 <figure>
   <img src="assets/fig_observability.png" alt="Cramer-Rao bound against the observability number N on a log-log scale">
-  <figcaption><b>Figure 5 &mdash; The observability number <i>N</i> predicts the estimation bound</b> (7,994 synthetic strokes; stroke-type medians labelled; shaded: the transition between <i>N</i>&nbsp;&asymp;&nbsp;17 and 22).</figcaption>
+  <figcaption><b>Figure 5 &mdash; The observability number <i>N</i> predicts the estimation bound</b> (7,994 synthetic strokes). The vertical axis is the Cram&eacute;r&ndash;Rao bound, the smallest 3D error any unbiased estimator can reach on that stroke, not the error of a method. The 150 strokes (1.9%) above 5&nbsp;m are counted at the top; shaded: the transition between <i>N</i>&nbsp;&asymp;&nbsp;17 and 22.</figcaption>
 </figure>
 
 <h3>4.3 Fisher information and dual geometric degeneracies</h3>
@@ -240,7 +240,7 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 <h3>4.4 Bias&ndash;variance trade-off: learned priors versus the CRLB</h3>
 <p>Across 7,994 synthetic strokes, <i>N</i> predicts the CRLB through an empirical power law (Figure&nbsp;5):</p>
 <div class="eq">$$\text{CRLB} \propto N^{-0.98} \qquad (R^2 = 0.83,\ \text{Spearman } \rho = -0.92).$$</div>
-<p>The partial correlation remains strong (&rho;&nbsp;=&nbsp;&minus;0.59) after controlling for the number of tracked frames.</p>
+<p>The partial correlation remains strong (&rho;&nbsp;=&nbsp;&minus;0.59) after controlling for the number of tracked frames. The bound falls steeply with <i>N</i>, from a median of 4.3&nbsp;m below <i>N</i>&nbsp;=&nbsp;1.5 to 0.3&nbsp;m at <i>N</i>&nbsp;&asymp;&nbsp;15&ndash;20, and it is heavy-tailed at the low end: 1.9% of strokes exceed 5&nbsp;m (up to 61&nbsp;m). Of these, 95% have <i>N</i>&nbsp;&lt;&nbsp;2, an image track that is almost a constant-velocity line, and 45% are tracked for ten frames or fewer; they are mostly rushes and drives near the net. For such a stroke the image carries essentially no depth information.</p>
 <p><b>Prior-dominated and image-dominated regimes.</b> The bound delineates two operating regimes:</p>
 <ul class="contrib">
   <li><i>Image-dominated regime (high <i>N</i>).</i> On the four stroke types with the highest median <i>N</i> (lift 27.0, clear 23.0, cross-net 15.3, defensive lift 14.9), visual curvature is rich enough for an unbiased physics fit to compete: on 400 synthetic strokes batch MAP is more accurate than Shuttle3D on lifts (0.136 vs. 0.279&nbsp;m) and clears (0.139 vs. 0.309&nbsp;m; Supp.&nbsp;&sect;S2.1). Shuttle3D stays above the bound there (ratio 1.51&ndash;2.55), paying the variance that the tracking noise demands.</li>
