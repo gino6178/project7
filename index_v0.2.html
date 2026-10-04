@@ -410,11 +410,12 @@ h4{font-size:15.5px;font-weight:600;margin:20px 0 6px;color:var(--muted)}
 horizontal distance from the reconstructed launch point to the annotated hit point, and that annotation
 is a <i>ground</i> coordinate &mdash; where the striking player stands, not the airborne shuttle. Contact
 happens an arm and a racket away from it, so the column has a floor: measuring the racket head directly
-on the court-aligned GVHMR bodies of &sect;S6.1 over 70 contacts in 8 venues puts the true contact point a median
+from the recovered bodies over 70 contacts in 8 venues puts the true contact point a median
 <b>0.85&nbsp;m</b> from the same annotation (IQR 0.51&ndash;1.86). Every row of Table&nbsp;S2 carries that
 floor, so gaps of a metre or more (MonoTrack at the launch end against us) stand; gaps smaller than the floor do not, because a
-reconstruction biased toward the player can beat the truth on this column (&sect;S2.2). Our 1.00&nbsp;m sits
-only 0.15&nbsp;m above that floor, which means only that the launch point lies near the player &mdash; not that it is accurate to a metre. &sect;S2.5 scores the launch end against references
+reconstruction biased toward the player can beat the truth on this column (&sect;S2.2). Our 1.00&nbsp;m is
+<i>only 0.15&nbsp;m above</i> the floor, which means only that a launch point pulled toward the player's feet scores
+well here &mdash; not that it is accurate to a metre. &sect;S2.5 scores the launch end against references
 that are actually at the launch point.</p>
 
 <p class="note"><b>The arrival column has the same floor, for the same reason.</b> Because the dataset
@@ -512,10 +513,10 @@ pixel residual is not vacuous &mdash; a median 11.6&nbsp;px &mdash; because the 
 only its first point is pinned to a ray.)</p>
 
 <p><b>The racket head.</b> The one reference physically at the contact point is the striker's racket, which
-the court-aligned GVHMR bodies of &sect;S6.1 place in 3D. Over 68 contacts in 8 venues, the reconstructed launch
-point sits a median <b>1.04&nbsp;m</b> from the racket head in 3D (IQR 0.61&ndash;1.79), of which
+the recovered SMPL-X bodies of &sect;S6.1 place in 3D. Over 68 contacts in 8 venues, the reconstructed launch
+point sits a median <b>1.04&nbsp;m</b> from the recovered racket head in 3D (IQR 0.61&ndash;1.79), of which
 <b>+0.13&nbsp;m</b> is a signed height error: the reconstruction places contact at a median 1.62&nbsp;m
-while the racket head is at 1.52&nbsp;m. That bias has a direction, which the ground-annotation
+while the recovered racket head is at 1.52&nbsp;m. That bias has a direction, which the ground-annotation
 metric cannot see at all. The reference is itself an estimate &mdash; the racket head is taken as the wrist
 plus 0.435&nbsp;m along the forearm, which assumes the face follows the forearm, and the bodies reproject to
 a median 7.2&nbsp;px &mdash; so this bounds the launch error rather than resolving it, and it is a pilot:
@@ -757,7 +758,7 @@ its cause is open.</p>
 <p>Placing a recovered body and a reconstructed shuttle in the same metric frame creates a comparison this
 problem does not otherwise admit, and it bears directly on the wrist-elevation anchor of &sect;3.4. The
 reference pixel is the tracker&rsquo;s raw detection, which the reconstruction consumes but never edits;
-nothing in the body recovery sees a shuttle at all, and the body&rsquo;s depth comes from ankles on the
+nothing in the pose recovery sees a shuttle at all, and the body&rsquo;s depth comes from ankles on the
 court plane. The two sides of the comparison are therefore independent of each other and of the
 reconstruction being tested.</p>
 
@@ -777,7 +778,7 @@ wrist to the <em>line of sight through the raw detection</em> is <b>0.44&nbsp;m<
 racket. The detection therefore agrees with the recovered body, and the depth along that ray is what
 disagrees. The reconstructed point itself sits only 0.09&nbsp;m off the detection&rsquo;s ray, so the 2D fit
 is tight; resolved along the ray, its depth is scattered with a far bias: a median 0.69&nbsp;m
-beyond the wrist&rsquo;s closest approach, with an interquartile range of <b>&minus;0.61 to +1.56&nbsp;m</b>. The median depends on the body&rsquo;s metric size (0.21&nbsp;m, IQR &minus;1.09 to +1.35&nbsp;m, if the bodies are left at GVHMR&rsquo;s own size); the metre-scale spread does not.</p>
+beyond the wrist&rsquo;s closest approach, with an interquartile range of <b>&minus;0.61 to +1.56&nbsp;m</b>.</p>
 
 <p>This is what &sect;4 predicts rather than a contradiction of it. The contact frame is the seam between
 two solved flights, the instant at which the arc being fitted ends and the next begins, and it carries the
@@ -824,33 +825,24 @@ the corresponding row of <b>R</b> recovers a proper camera whose reprojection ag
 </figure>
 
 <p><b>Players are recovered from the broadcast, not animated.</b> No motion-capture corpus contains
-badminton, and a stock walk cycle would defeat the purpose. Body recovery is not a contribution of this
-paper, so we use an off-the-shelf world-grounded method, GVHMR<sup class="cite">[<a href="#ref-17">17</a>]</sup>, in its static-camera mode
-(no visual odometry): it receives each player&rsquo;s box from our skeleton tracks and the intrinsics
-calibrated in &sect;3.1, and returns an SMPL-X pose for every frame in a gravity-aligned frame. Three steps
-then make the bodies metric in the court frame, from observables only. The gravity-view frame is rotated
-into the court with the calibrated camera, its up axis onto the court&rsquo;s and its viewing direction
-onto the camera&rsquo;s. Position comes from the floor, not from apparent height: in every frame the lowest
-mesh vertex is put on <i>z</i>&nbsp;=&nbsp;0 and the ankle joints on the viewing rays of the detected ankle
-pixels at the ankles&rsquo; own height &mdash; the same ground measurement the rest of this paper rests on.
-Shape is <b>one 10-dimensional &beta; per player per sequence</b>; GVHMR already averages its per-frame
-shape output over the sequence, which, left per-frame, would move a player&rsquo;s standing height by
-4.8&nbsp;cm between the 5th and 95th percentile of frames. A single size factor per player and sequence
-(median 1.09, range 0.94&ndash;1.22), chosen on the 2D keypoints, reconciles the body with the court&rsquo;s
-metric scale. Over 6,484 player-frames in 33 clips the bodies reproject onto the YOLO skeleton tracks at a
-median 7.3&nbsp;px (6.4&nbsp;px onto GVHMR&rsquo;s own ViTPose keypoints) &mdash; nothing in the pipeline
-minimises that residual beyond the one size factor &mdash; and on one rally of the multi-view capture of
-&sect;S4 their poses lie 47 and 42&nbsp;mm from the multi-view bodies of the two players after Procrustes
-alignment. Every body in this section and in &sect;S5 is recovered this way. (An earlier version of this
-page used a custom per-frame fit with a learned pose prior.)</p>
+badminton, and a stock walk cycle would defeat the purpose. Instead an SMPL-X body is recovered per frame
+by an off-the-shelf method, GVHMR<sup class="cite">[<a href="#ref-17">17</a>]</sup>, with a static camera, from each player's box in the 2D
+skeleton tracks and that venue's intrinsics, and rotated into the court with the calibrated camera.
+Three constraints make the body metric rather than merely plausible. Depth is anchored by back-projecting
+the ankle pixels to the ankles&rsquo; height above the court plane &mdash; the same sub-pixel ground measurement the rest of this paper
+rests on &mdash; because apparent height is a poor depth cue and fixing the body to a nominal 1.72&nbsp;m
+pulls both players about 0.8&nbsp;m toward the camera; sole contact uses the lowest mesh vertex, not the
+ankle joint, which sits 7&nbsp;cm off the floor; and shape is one &beta; per player per sequence, with one
+size factor per player and sequence chosen on the 2D keypoints &mdash; left per frame, &beta; would move a
+player&rsquo;s standing height by 4.8&nbsp;cm between the 5th and 95th percentile of frames.
+Over 6,484 player-frames in 33 clips the bodies reproject onto the 2D skeleton tracks at a median 7.3&nbsp;px, about 4% of body height &mdash; the level at which the multi-view reference bodies themselves reproject onto the same keypoints &mdash; and on one rally of the multi-view capture of &sect;S4 their poses lie 47 and 42&nbsp;mm from the reference bodies after Procrustes alignment.</p>
 
 <figure>
   <img src="assets/fig_smplx_fit_v02.png" alt="Pipeline: GVHMR with a static camera, then court-plane alignment, then one shape per player per sequence">
-  <figcaption><b>Figure S9 &mdash; How the player bodies are obtained.</b> GVHMR, with a static
-  camera, supplies the pose in a gravity-aligned frame; the calibrated camera rotates that frame into
-  the court, the ankles on the court plane fix the position, and shape is one &beta; per player per
-  sequence, with one size factor per player and sequence from the court. Nothing about the body is
-  optimised per frame.</figcaption>
+  <figcaption><b>Figure S9 &mdash; How the player bodies are obtained.</b> GVHMR, with a static camera,
+  supplies the pose; the calibrated camera rotates it into the court, and the depth comes from the ankles
+  on the court plane, not from apparent height. Shape is one &beta; per player per sequence; nothing about
+  the body is optimised per frame.</figcaption>
 </figure>
 
 <figure>
@@ -859,7 +851,7 @@ page used a custom per-frame fit with a learned pose prior.)</p>
   </video>
   <figcaption><b>Figure S10 &mdash; A rendered reconstruction of a real rally segment, beside the footage it
   was built from.</b> Left: broadcast. Right: the render. Same camera, both players recovered per frame from
-  the broadcast with GVHMR and aligned to the court as above, shuttle on the reconstructed trajectory, motion blur at a measured
+  the broadcast, shuttle on the reconstructed trajectory, motion blur at a measured
   shutter, and the cone's axis driven by the pitching ODE rather than snapped to the velocity &mdash; so the
   post-impact turnover (153&deg; to under 10&deg; in 1.8 frames) follows from the restoring torque instead of
   a hand-set interpolation. Frames 200&ndash;226 have no reconstructed stroke and are filled by solving a flight between the
@@ -867,7 +859,7 @@ page used a custom per-frame fit with a learned pose prior.)</p>
   reconstruction rather than data.</figcaption>
 </figure>
 
-<p><b>Strokes are populated from observed strikes.</b> Recovering 16 clips across eight calibrated venues
+<p><b>Strokes are populated from observed strikes.</b> Recovering bodies from 16 clips across eight calibrated venues
 yields a library of 3,144 poses, each tagged with the racket hand, the wrist heights, and &mdash; from the
 stroke annotations &mdash; whether that frame is a contact and which player struck. To render a synthetic
 stroke, the striker is the observed striking pose whose racket head sits closest to the required launch
@@ -876,7 +868,7 @@ the feet rest on the floor. Launch point, landing point and duration come from t
 exactly as in &sect;3.2; only the height between them is solved.</p>
 
 <figure>
-  <img src="assets/sim_rally_shots_v02.png" alt="Four synthetic strokes, one of each class, populated from the fitted pose library">
+  <img src="assets/sim_rally_shots_v02.png" alt="Four synthetic strokes, one of each class, populated from the recovered pose library">
   <figcaption><b>Figure S11 &mdash; One synthetic stroke of each class, populated from the pose library.</b>
   Launch point, landing point and duration are the human annotations; only the height between them is
   solved. The striker is the observed striking pose whose racket head sits closest to the required launch
@@ -891,31 +883,30 @@ the render against the broadcast frame it was built from.</p>
 <div class="tbl"><table>
 <tr><th>registration of the rendered twin to the broadcast frame</th><th>value</th></tr>
 <tr><td>court lines, 1,440 samples over 12 lines</td><td class="good">2.2 px median (p90 6.0)</td></tr>
-<tr><td>near / far player, 91-frame sequence, GVHMR bodies</td><td class="bad">8.7 / 5.1 px median</td></tr>
+<tr><td>near / far player, 91-frame sequence</td><td>8.7 / 5.1 px median</td></tr>
 <tr><td>rendering camera against the venue projection</td><td>3.9 px, worst of 9 test points</td></tr>
 <tr><td>camera motion within a rally (phase correlation, 20 frames)</td><td>0.25 px median</td></tr>
 <tr><td>shuttle streak, rendered vs real (45 annotated frames)</td><td class="bad">9.4 px vs 13.2 px major axis</td></tr>
 <tr><td>streak orientation against flight direction</td><td class="good">0.984 vs 0.996 |cos|</td></tr>
-<tr><td>render cost</td><td>4.8 s/frame, GPU path tracing (RTX 3090), 1280&times;720</td></tr>
+<tr><td>render cost</td><td>4.8 s/frame, GPU path tracing, 1280&times;720</td></tr>
 </table></div>
 
-<p>Court alignment lands at the residual the corner annotations themselves carry. The recovered bodies sit
-above the detector's own keypoint noise of about 4&nbsp;px (8.7 and 5.1&nbsp;px for the near and far
-player), the price of an off-the-shelf recovery that is not fitted to these keypoints. The other shortfall
-is streak length. The render's streak is also 0.9&nbsp;px narrower (5.9 against 6.8&nbsp;px), but the
-deficit in length is concentrated at speed &mdash; on the fastest fifth of frames the render gives
-14.5&nbsp;px against 19.3, while on the slowest fifth the two differ by 0.8&nbsp;px &mdash; which is the
-signature of a shutter that is too short: the render used the corpus-median shutter of 1/116&nbsp;s while
-this clip is slower. Shutter is measurable per
+<p>Court alignment lands at the residual the corner annotations themselves carry, and the recovered bodies
+reproject as closely as the multi-view reference bodies do, about 4% of body height. The remaining shortfall is streak length. The minor axis
+is 0.9&nbsp;px short (5.9 against 6.8&nbsp;px; 3.8&nbsp;px in length), so the shuttle's size is close and mainly the exposure is short: the
+render used the corpus-median shutter of 1/116&nbsp;s while this clip is slower. The deficit is
+concentrated at speed &mdash; on the fastest fifth of frames the render gives 14.5&nbsp;px against 19.3,
+while on the slowest fifth the two agree to 0.8&nbsp;px &mdash; which is the signature of a shutter that is
+too short rather than a shuttle that is the wrong size. Shutter is measurable per
 clip from the streaks themselves &mdash; median 1/150&nbsp;s with an eight-fold spread across clips, 1/91 to
 1/1708 &mdash; and wiring that per-clip value into the renderer is the obvious correction.</p>
 
 <p class="note"><b>These streak figures replace an earlier, contaminated set.</b> We first measured
 blob shape in a window around the shuttle on the <i>raw</i> frames, which lets court lines inside the
-window pass the intensity threshold (11.0 px against 15.2 on these renders, experiments/exp100). Every
-streak statistic here is measured on the background-difference image &mdash; which is also what the
-detector consumes &mdash; as the principal axes (4&sigma;) of the component above a difference of 60 in a
-32&nbsp;px window at the annotated shuttle pixel.</p>
+window pass the intensity threshold: that gave 11.0 px against 15.2 and an orientation agreement
+so far below the 0.996 measured on broadcast that it should have been read as a
+measurement fault rather than a rendering one. Every streak statistic here is measured on the
+background-difference image &mdash; which is also what the detector consumes.</p>
 
 <p><b>The acceptance test: a detector that has never seen a render.</b> Registration says the geometry
 is right; it does not say a detector would treat the image as broadcast. So the released TrackNetV5-Lite
@@ -950,32 +941,26 @@ ground truth, so a per-frame comparison is a comparison of two detectors, and we
   it does not distinguish between real and rendered.</figcaption>
 </figure>
 
-<p>The population step has its own failure mode, and it is a sampling failure rather than a body one.
-A first library built from randomly chosen 100-frame windows contains 58 striking poses (a contact frame
-of the stroke annotations, at the player whose wrist is nearer the annotated shuttle), of which 15 are
-<i>overhead-class</i> strikes (smash, clear, cut or push in the annotations) and only <b>5</b> have the
-striking wrist above 1.6&nbsp;m. Two explanations were natural and both were tested and rejected. The
-detector is as sure of the striking wrist at high contacts (annotated shuttle above 1.8&nbsp;m) as elsewhere
-(median keypoint confidence 0.94 against 0.95), and the recovered wrist stays within the body's usual
-reprojection of that detection (15.5 against 12.3&nbsp;px), so the arm is where the image puts it; and the
-distance from the nearest recovered wrist to the line of sight through the raw detection, swept around
-each contact, reads
+<p>The population step has its own failure mode, and it is a sampling failure rather than a recovery one.
+A first library built from randomly chosen 100-frame windows contained <b>15</b> overhead-class strikes
+(smash, clear, cut or push in the annotations) among 58 striking poses, and only <b>5</b> striking poses with the wrist above 1.6&nbsp;m, which makes a synthetic smash hard to stage. Two explanations were natural
+and both were tested and rejected: keypoint confidence at overhead contacts is <em>as high</em> as
+elsewhere (0.94 against 0.95) and the recovered wrist reprojects 15.5&nbsp;px from the detected one (12.3&nbsp;px elsewhere), so
+the body follows the data there as elsewhere; and the distance from the nearest recovered wrist to the line of sight through the raw detection,
+swept around each contact, reads
 1.01&nbsp;/&nbsp;0.65&nbsp;/&nbsp;<b>0.44</b>&nbsp;/&nbsp;0.69&nbsp;/&nbsp;0.92&nbsp;m at
 &minus;8&nbsp;/&nbsp;&minus;4&nbsp;/&nbsp;0&nbsp;/&nbsp;+4&nbsp;/&nbsp;+8 frames &mdash; a clean minimum exactly at
 contact, so the striker is identified correctly. The cause is that random windows are mostly footwork.
-Selecting windows by the annotated stroke class changes the library without changing a line of the body
-recovery. In the table, the <i>highest racket head</i> is the maximum over all library poses of the
-racket-head height (wrist plus 0.435&nbsp;m along the forearm) with the body upright and the feet on the
-floor, and the last row is how far the placed striker&rsquo;s racket head falls below the required launch
-point for the smash, clear and drop of Figure&nbsp;S11.</p>
+Selecting windows by the annotated stroke class, since smash, clear, cut and push are struck above the
+head, changes the library without changing a line of the body recovery.</p>
 
 <div class="tbl"><table>
 <tr><th>pose library, 16 clips over 8 venues</th><th>random windows</th><th>selected by stroke class</th></tr>
 <tr><td>striking poses</td><td>58</td><td>66</td></tr>
 <tr><td><b>overhead-class strikes</b></td><td class="bad">15</td><td class="good">51</td></tr>
 <tr><td>striking wrist above 1.6&nbsp;m</td><td class="bad">5</td><td class="good">20</td></tr>
-<tr><td>highest racket head</td><td>2.22 m</td><td class="good">2.40 m</td></tr>
-<tr><td>racket head below the required launch point, overhead strokes</td><td class="bad">0.30&ndash;0.34 m</td><td class="good">0.13&ndash;0.17 m</td></tr>
+<tr><td>highest reachable racket head (max over poses of the wrist + 0.435&nbsp;m along the forearm, body upright, feet on the floor)</td><td>2.22 m</td><td class="good">2.40 m</td></tr>
+<tr><td>racket head vs required launch point, overhead strokes</td><td class="bad">0.30&ndash;0.34 m</td><td class="good">0.13&ndash;0.17 m</td></tr>
 </table></div>
 <h4 id="s6-3">S6.3 Cost</h4>
 <p>Every stage was timed on one RTX&nbsp;3090 with the GPU exclusive, after warm-up, reporting the median of repeated runs. The host was not idle &mdash; an unrelated 40-worker job held the 64-core machine at load 22&ndash;41 throughout &mdash; which inflates the CPU-side feature construction, the kernel-launch-bound rectifier and the calibration wall clock. <b>Every figure below is therefore an upper bound on this hardware.</b></p>
